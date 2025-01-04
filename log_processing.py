@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 #
-# Process log files from teh BES. jhrg 12/06/24
+# Process log files from the BES. jhrg 12/06/24
+
 import csv
 import argparse
 import os
