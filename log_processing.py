@@ -12,11 +12,13 @@ from collections import defaultdict
 verbose = False
 
 
-def split_csv_by_pid(input_file):
+def split_csv_by_pid(input_file, field=2):
     """
-    Spint the given CSV file into N files, one for each of the N PIDs in field 2
+    Spint the given CSV file into N files, one for each of the N PIDs in field 3
     of the CSV input file.
     :param input_file: CSV file of BES log data
+    :param field: zero-based index of the field that holds the PID (this changed
+    from 1 to 2 when instance IDs were addedd to the bes.log)
     :return: None; makes N files as a side effect
     """
     # Dictionary to store lines grouped by process ID
@@ -27,7 +29,7 @@ def split_csv_by_pid(input_file):
         reader = csv.reader(infile)
         for line in reader:
             if line:  # Skip empty lines
-                pid = line[1]  # Assuming the PID is in the second column (index 1)
+                pid = line[field]  # Assuming the PID is in the second column (index 2)
                 pid_groups[pid].append(line)
 
     # Write output files for each unique PID
