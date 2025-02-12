@@ -47,3 +47,25 @@ Further refining:
 (hyrax500) jgallag4@GSLAL2023031970 2-4-25-uat %  jq '[.[] | select(.["hyrax-message"] | contains("BESUtil.cc:298"))]' errors.json > errors-besutil.json
 (hyrax500) jgallag4@GSLAL2023031970 2-4-25-uat % jq 'length' errors-besutil.json
 51
+
+Here's more info about using jq to extract errors: Get all the records that do not contain... NB: 'contains' is a simple string search while 'test' is a 
+regex match operator (not sure they are called operators) and is more powerful but maybe slower.
+
+jq '[.[] | select(.["hyrax-message"] | (contains("timeout_expired()") or contains("BESTimeoutError") or contains("NgapApi.cc:304")) | not)]' errors.json > other_errors.json
+
+Here's how I split up all the errors for a 12 hour period from 00:00:00 to 12:00:00 on 2/12/25:
+
+(hyrax500) jgallag4@GSLAL2023031970 2-12-25-prod % jq length errors.json CMR_not_found.json timeout_errors.json timeout_expired_errors.json other_errors.json 
+867
+504
+131
+131
+101
+
+Those numbers add up. 
+
+In the other_errors.json there's a mix of things with a fair number of
+bogus cache 'errors' that are actually (or should be) info messages.
+This dump from cloud watch is from build 52 and I believe build 60 has
+better treatment of those cache error/info messages.
+
