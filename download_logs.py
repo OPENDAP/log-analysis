@@ -75,10 +75,13 @@ def download_logs(log_group_name, start_time, end_time = "", output_file = "outp
         print("[", file=f)
         all_messages = [event['message'] for event in all_events]
 
-        for message in all_messages:
+        for message in all_messages[:-1]:
             if message.startswith("{"):
                 print(message, file=f, end="")
                 print(',', file=f)
+
+        if all_messages[-1].startswith("{"):
+            print(message, file=f, end="")
 
         # cheat - instead of splitting the messages up to get the last json object printed without an
         # ending comma, just write a placeholder line. jhrg 1/24/25

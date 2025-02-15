@@ -69,3 +69,8 @@ bogus cache 'errors' that are actually (or should be) info messages.
 This dump from cloud watch is from build 52 and I believe build 60 has
 better treatment of those cache error/info messages.
 
+I added a new command - join_json_arrays.py - that will join two json
+arrays based on a key. Once done, we can get a CSV file of the response
+codes and CCID using:
+
+jq -r '.[] | "\(.http_response_code),\(.collectionId)"' merged.json > response_code_and_ccid.csv
