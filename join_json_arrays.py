@@ -13,7 +13,25 @@ def loggy(message: str):
         print(f"# {message}")
 
 def join_json_arrays(left_array: str, left_key: str, right_array: str, right_key: str, out_file: str):
+    """
+    For two arrays of JSON records, build an index from the 'right' array based on the
+    JSON key 'key'. Then scan the records in 'left' for records using 'key' and join those
+    with the matching records from 'right.'
 
+    Assumptions: The 'left' array contains records that _always_ contains the 'key' and
+    each instance is unique. Similarly, while not every record in 'right' has 'key,' the
+    instances of 'key' are also unique in 'right.'
+
+    :note: Make this return the merged document and let the caller decide if it should
+    be written to a file or used differently.
+
+    :param left_array: JSON array to merge
+    :param left_key: The JSON key on which to form the index for the left array
+    :param right_array: JSON array used to make the index on 'key'
+    :param right_key: The JSON key on which to form the index for the right array
+    :param out_file: Filename where the JSON should be written.
+    :return: nothing
+    """
     loggy(f"  left_array: {left_array}")
     loggy(f"    left_key: {left_key}")
     loggy(f"")
