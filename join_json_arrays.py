@@ -9,6 +9,24 @@ Joins two JSON arrays into a single JSON array.
 
 
 def join_json_arrays(left_array: str, right_array: str, key: str, result: str):
+    """
+    For two arrays of JSON records, build an index from the 'right' array based on the
+    JSON key 'key'. Then scan the records in 'left' for records using 'key' and join those
+    with the matching records from 'right.'
+
+    Assumptions: The 'left' array contains records that _always_ contains the 'key' and
+    each instance is unique. Similarly, while not every record in 'right' has 'key,' the
+    instances of 'key' are also unique in 'right.'
+
+    :note: Make this return the merged document and let the caller decide if it should
+    be written to a file or used differently.
+
+    :param left_array: JSON array to merge
+    :param right_array: JSON array used to make the index on 'key'
+    :param key: The JSON key on which to form the index
+    :param result: Filename where the JSON should be written.
+    :return: nothing
+    """
     # Load the left JSON array (e.g., job details)
     with open(left_array, 'r') as f:
         left_records = json.load(f)
