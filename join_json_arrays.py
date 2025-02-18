@@ -3,7 +3,7 @@
 import json
 
 verbose = False
-max_records=0
+max_records = 0
 
 """
 Joins two JSON arrays into a single JSON array.
