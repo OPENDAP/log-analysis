@@ -67,7 +67,7 @@ def join_json_arrays(left_array: str, right_array: str, key: str, result: str):
 
     print(f"Joined {len(joined_records)} records.",file=sys.stderr)
 
-def join_json_arrays_2keys(left_array: str, left_key: str, right_array: str, right_key: str, out_file: str):
+def join_bes_json_log_entries(left_array: str, left_key: str, right_array: str, right_key: str, out_file: str, type="request"):
     """
     For two arrays of JSON records, build an index from the 'right_array' based on the
     JSON key 'right_key'. Then scan the records in 'left_array' for records using 'key' and join those
@@ -80,6 +80,7 @@ def join_json_arrays_2keys(left_array: str, left_key: str, right_array: str, rig
     :note: Make this return the merged document and let the caller decide if it should
     be written to a file or used differently.
 
+    :param type: The type of log messages to join
     :param left_array: JSON array to merge
     :param left_key: The JSON key name on which to form the index for the left array
     :param right_array: JSON array used to make the index on 'key'
@@ -111,9 +112,10 @@ def join_json_arrays_2keys(left_array: str, left_key: str, right_array: str, rig
     #loggy(f"right_records: {right_records}")
 
     # Build an index (a dictionary) from the right records using request_id as the key
-    right_index = {record.get(right_key,""): record for record in right_records if record.get("hyrax-type","") == "request"}
+    right_index = {record.get(right_key,""): record for record in right_records if record.get("hyrax-type","") == type}
 
-    # For each record in the left array, merge it with the corresponding right record (if available)
+    # Iterate over the records in the left_array (left_records),
+    # merge each with the corresponding right record, if one is found
     joined_records = []
     rec_num=0
     for left_record in left_records:
@@ -162,7 +164,7 @@ def main():
     if args.left_key == args.right_key:
         join_json_arrays(args.left_array, args.right_array, args.left_key, args.output)
     else:
-        join_json_arrays_2keys(args.right_array, args.right_key, args.left_array, args.left_key,  args.output)
+        join_bes_json_log_entries(args.left_array, args.left_key, args.right_array, args.right_key, args.output)
 
     print(f"Data extracted and saved to {args.output}",file=sys.stderr)
 
