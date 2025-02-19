@@ -12,6 +12,7 @@ def loggy(message: str):
     if verbose:
         print(f"# {message}")
 
+
 def join_json_arrays(left_array: str, left_key: str, right_array: str, right_key: str, out_file: str):
     """
     For two arrays of JSON records, build an index from the 'right' array based on the
