@@ -47,10 +47,11 @@ application_log_error_type= "error"
 application_log_verbose_type= "verbose"
 application_log_timing_type= "timing"
 
-def join_olfs_metrics_log_with_bes_application_log_entries(
+def join_metrics_log_with_application_log_entries(
         metrics_log: str,
         application_log: str,
         out_file: str):
+
     """
     Joins our merged CloudWatch Metrics logs (hyrax_request_log and hyrax_response_log), with the
     json encoded BES application logs for the same time period.
@@ -98,7 +99,11 @@ def join_olfs_metrics_log_with_bes_application_log_entries(
     matched_records=0
     for metrics_log_record in metrics_log_records:
         rec_num+=1
-        if not verbose: print(".",end='', file=sys.stderr)
+        if not verbose:
+            print(".", end='', file=sys.stderr)
+            if not rec_num%80 :
+                print("", file=sys.stderr)
+
 
         loggy(f"-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --")
         #loggy(f"metrics_log_record: {metrics_log_record}")
@@ -146,7 +151,7 @@ def join_olfs_metrics_log_with_bes_application_log_entries(
         if max_records!=0 and rec_num >=max_records:
             break
 
-    # Write the result to a new file or print it
+    # Write the results to the file
     with open(out_file, 'w') as f:
         json.dump(joined_records, f, indent=2)
 
@@ -188,9 +193,9 @@ def main():
     loggy(f"verbose: {verbose}")
     loggy(f"args: {args}")
 
-    join_olfs_metrics_log_with_bes_application_log_entries(args.metrics_log, args.application_log, args.output)
+    join_metrics_log_with_application_log_entries(args.metrics_log, args.application_log, args.output)
 
-    print(f"Data extracted and saved to {args.output}",file=sys.stderr)
+    stderr(f"Data extracted and saved to {args.output}")
 
 
 if __name__ == "__main__":

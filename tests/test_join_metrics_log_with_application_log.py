@@ -6,7 +6,7 @@ from io import StringIO
 import contextlib
 
 import json
-from join_metrics_log_with_application_log import join_olfs_metrics_log_with_bes_application_log_entries
+from join_metrics_log_with_application_log import join_metrics_log_with_application_log_entries
 
 verbose = True
 
@@ -230,7 +230,7 @@ class TestJoinJsonArrays(unittest.TestCase):
 
         # Call the function
 
-        join_olfs_metrics_log_with_bes_application_log_entries(self.metrics_log_file.name, self.application_log_file.name, self.result_file.name)
+        join_metrics_log_with_application_log_entries(self.metrics_log_file.name, self.application_log_file.name, self.result_file.name)
         loggy(f"self.result_file.name: {self.result_file.name}")
 
         # Verify that the output file contains the expected joined records.
