@@ -25,6 +25,11 @@ def stderr(message: str):
     """
     print(f"# {message}", file=sys.stderr)
 
+def wrap_a_line(msg:str, count:int, width=80):
+    print(msg, end='', file=sys.stderr)
+    if not count % width:
+        print("", file=sys.stderr)
+
 
 def convert_iso_to_unix(iso_string):
     """Converts an ISO 8601 formatted string to a Unix timestamp."""
@@ -99,11 +104,9 @@ def join_metrics_log_with_application_log_entries(
     matched_records=0
     for metrics_log_record in metrics_log_records:
         rec_num+=1
-        if not verbose:
-            print(".", end='', file=sys.stderr)
-            if not rec_num%80 :
-                print("", file=sys.stderr)
 
+        if not verbose:
+            wrap_a_line(".",rec_num, 100)
 
         loggy(f"-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --")
         #loggy(f"metrics_log_record: {metrics_log_record}")
@@ -155,7 +158,7 @@ def join_metrics_log_with_application_log_entries(
     with open(out_file, 'w') as f:
         json.dump(joined_records, f, indent=2)
 
-    stderr(f"\nProcessed {len(joined_records)} records. Joined {matched_records} records.")
+    stderr(f"\nProcessed {len(joined_records)} metrics_log records. Joined {matched_records} application_log records.")
 
 
 #def join_olfs_metrics_log_with_bes_application_log_entries(
