@@ -161,10 +161,6 @@ def join_metrics_log_with_application_log_entries(
     stderr(f"\nProcessed {len(joined_records)} metrics_log records. Joined {matched_records} application_log records.")
 
 
-#def join_olfs_metrics_log_with_bes_application_log_entries(
-#        olfs_metrics: str,
-#        bes_application_log: str,
-#        out_file: str):
 
 def main():
     global verbose;
