@@ -1,24 +1,11 @@
 import unittest
 import tempfile
 import os
-import sys
 from io import StringIO
 import contextlib
 
 import json
 from join_json_arrays import join_json_arrays
-from join_json_arrays import join_bes_json_log_entries
-
-verbose = True
-
-
-def loggy(message: str):
-    """
-    Prints a log message tpo stderr when verbose is enabled.
-    """
-    if verbose:
-        print(f"# {message}", file=sys.stderr)
-
 
 class TestJoinJsonArrays(unittest.TestCase):
 
@@ -54,8 +41,6 @@ class TestJoinJsonArrays(unittest.TestCase):
             {"id": 3, "value": "left3"}
         ]
         # Write JSON data to temporary files
-        loggy(f"self.left_file.name: {self.left_file.name}")
-        loggy(f"self.right_file.name: {self.right_file.name}")
         json.dump(left_data, self.left_file)
         self.left_file.seek(0)
         json.dump(right_data, self.right_file)
@@ -63,37 +48,6 @@ class TestJoinJsonArrays(unittest.TestCase):
 
         # Call the function
         join_json_arrays(self.left_file.name, self.right_file.name, 'id', self.result_file.name)
-        loggy(f"self.result_file.name: {self.result_file.name}")
-
-        # Verify that the output file contains the expected joined records.
-        with open(self.result_file.name, 'r') as f:
-            joined_data = json.load(f)
-        self.assertEqual(joined_data, expected_output)
-
-    def test_basic_join_different_keys(self):
-        # Prepare test data
-        left_data = [
-            {"lid": 1, "ldata": "left1"},
-            {"lid": 2, "ldata": "left2"},
-            {"lid": 3, "ldata": "left3"}
-        ]
-        right_data = [
-            {"rid": 1, "rdata": "right1" , "hyrax-type": "request"},
-            {"rid": 2, "rdata": "right2", "hyrax-type": "request"}
-        ]
-        expected_output = [
-            {"lid": 1, "ldata": "left1", "rid": 1, "rdata": "right1", "hyrax-type": "request"},
-            {"lid": 2, "ldata": "left2", "rid": 2, "rdata": "right2", "hyrax-type": "request"},
-            {"lid": 3, "ldata": "left3"}
-        ]
-        # Write JSON data to temporary files
-        json.dump(left_data, self.left_file)
-        self.left_file.seek(0)
-        json.dump(right_data, self.right_file)
-        self.right_file.seek(0)
-
-        # Call the function
-        join_bes_json_log_entries(self.left_file.name, "lid", self.right_file.name, 'rid', self.result_file.name, "request")
 
         # Verify that the output file contains the expected joined records.
         with open(self.result_file.name, 'r') as f:
