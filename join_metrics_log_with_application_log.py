@@ -85,11 +85,12 @@ def join_metrics_log_with_application_log_entries(
     with open(metrics_log, 'r') as f:
         metrics_log_records = json.load(f)
 
-    # Load the appliaction log records. (e.g., user details)
+    # Load the application log records. (e.g., user details)
     with open(application_log, 'r') as f:
         application_log_records = json.load(f)
 
-    # Build an index (a dictionary) from the BES Application Log  records using application_log_request_id_key as the key
+    # Build an index (a dictionary) the application records using application_log_request_id_key as the key,
+    # only including the application_log_request_type entries.
     application_log_index = {
         record.get(application_log_request_id_key,""): record
         for record in application_log_records
@@ -97,26 +98,29 @@ def join_metrics_log_with_application_log_entries(
     }
 
     # Iterate over the records in metrics_log_records,
-    # merge each with the corresponding application_log_records record(s), a BES application
-    # log record is found with a matching request id.
+    # merge each with the corresponding application_log_records record(s). A BES application log records are located
+    # by matching the values of the metrics_request_id_key and the application_log_request_id_key in the teo records.
     joined_records = []
     rec_num=0
     matched_records=0
     for metrics_log_record in metrics_log_records:
         rec_num+=1
 
+        # Progress Bar :)
         if not verbose:
             wrap_a_line(".",rec_num, 100)
 
         loggy(f"-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --")
-        #loggy(f"metrics_log_record: {metrics_log_record}")
-        # Lookup the matching record; if none, use an empty dict
+
+        # Grab the value of metrics_request_id_key for the current metrics_log_record
         metrics_request_id = metrics_log_record.get(metrics_request_id_key, {})
         if metrics_request_id:
             loggy(f"metrics_log_record has \"{metrics_request_id_key}\": {metrics_request_id}")
+            # Lookup the matching application log record; if none, return an empty dict
             application_log_record = application_log_index.get(metrics_request_id, {})
             if len(application_log_record) > 0:
-                #loggy(f"bes_log_record: {bes_log_record}")
+                # Find the things we need- instance-id, pid, start and end times so we can mine
+                # the application-log for messages.
                 pid = application_log_record.get("hyrax-pid","")
                 instance_id = application_log_record.get("hyrax-instance-id","")
                 bes_start_time = int(application_log_record.get("hyrax-time",0))
@@ -130,6 +134,7 @@ def join_metrics_log_with_application_log_entries(
                 if end_time_str != "":
                     end_time = convert_iso_to_unix(end_time_str)
 
+                # Locate all the application log records for the request by matching instance-id, pid, and time range
                 related_application_log_entries = [
                     record for record in application_log_records
                     if record.get("hyrax-instance-id", "") == instance_id and
@@ -139,6 +144,7 @@ def join_metrics_log_with_application_log_entries(
                 ]
                 loggy(f"Found {len(related_application_log_entries)} related_application_log_entries for pid: {pid} on instance: {instance_id} .")
 
+                # Join the things
                 joined = {**metrics_log_record, "bes": {application_log_request_type:{**application_log_record}, "related_entries": related_application_log_entries}}
                 joined_records.append(joined)
                 matched_records += 1 + len(related_application_log_entries)
@@ -149,8 +155,6 @@ def join_metrics_log_with_application_log_entries(
         else:
             loggy(f"Failed to locate key {metrics_request_id_key} in metrics_log_record: {metrics_log_record}")
 
-
-        # loggy(f"Completed Record {rec_num}, matched: {matched_records}")
         if max_records!=0 and rec_num >=max_records:
             break
 
