@@ -138,7 +138,7 @@ def join_metrics_log_with_application_log_entries(
 
                 joined = {**metrics_log_record, "bes": {application_log_request_type:{**application_log_record}, "related_entries": related_application_log_entries}}
                 joined_records.append(joined)
-                matched_records +=1
+                matched_records += 1 + len(related_application_log_entries)
 
             else:
                 loggy(f"Failed to locate the application_log_request_id_key: {application_log_request_id_key} with value: {metrics_request_id} in the application_log_index.")
