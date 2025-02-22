@@ -56,7 +56,7 @@ def join_json_arrays(left_array: str, right_array: str, key: str, result: str):
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="Given two json arrays, joi them using a common key and store them "
+    parser = argparse.ArgumentParser(description="Given two json arrays, join them using a common key and store them "
                                                  "in a file.")
     parser.add_argument("-v", "--verbose", help="Increase output verbosity.", action="store_true")
     parser.add_argument("-l", "--left", help="The 'left' json array (table)",
