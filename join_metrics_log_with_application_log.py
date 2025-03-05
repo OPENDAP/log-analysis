@@ -26,13 +26,18 @@ def stderr(message: str):
     print(f"# {message}", file=sys.stderr)
 
 def wrap_a_line(msg:str, count:int, width=80):
+    """
+    A progress bar which will inject a newline when count % width is zero.
+    """
     print(msg, end='', file=sys.stderr)
     if not count % width:
         print("", file=sys.stderr)
 
 
 def convert_iso_to_unix(iso_string):
-    """Converts an ISO 8601 formatted string to a Unix timestamp."""
+    """
+    Converts an ISO 8601 formatted string to a Unix timestamp.
+    """
     try:
         time_format = "%Y-%m-%dT%H:%M:%S%z"
         dt = datetime.strptime(iso_string, time_format) #Handle Z timezones
