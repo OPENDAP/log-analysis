@@ -2,10 +2,11 @@
 
 export combined_log_file="./combined_log.json"
 
+
 # Find all the records in the $combined_log_file that do not have the BES record (aka unmatched records)
 # using the presence of the key name "bes" as the indicator
 export unmatched_records_file="./unmatched_records"
-cat "$combined_log_file" | jq '.[] | if has("bes") | not then . else "dropme" end' | grep -v dropme > "$unmatched_ngap_404_response_records_file"
+cat "$combined_log_file" | jq '.[] | if has("bes") | not then . else "dropme" end' | grep -v dropme > "$unmatched_records_file"
 echo "Located"$(cat "$unmatched_records_file" | jq '.http_response_code' | wc -l)" requests that lacked a BES component (aka unmatched requests)"
 
 
