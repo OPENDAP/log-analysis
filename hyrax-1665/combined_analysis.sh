@@ -63,6 +63,17 @@ echo "Located"$(cat "$C2938661904_nsidc_cprd_records_file" | jq 'if .http_respon
 echo "Located"$(cat "$C2938661904_nsidc_cprd_records_file" | jq 'if .http_response_code==502 then .http_response else "skippy" end '| grep -v skippy | wc -l)" (502 Bad Gateway) response records for C2938661904-NSIDC_CPRD"
 
 
+# Get the all response records from C2938661904-NSIDC_CPRD (18644 records total)
+export pocloud_records_file="./pocloud_records"
+cat "$combined_log_file" | jq '.[] | if .collectionId!=null and (.collectionId | contains("POCLOUD")) then . else "skippy"  end' | grep -v skippy | jq '.' > "$pocloud_records_file"
+echo "Located"$(cat "$pocloud_records_file" | jq '.http_response_code' | wc -l)" records for POCLOUD"
+echo "Located"$(cat "$pocloud_records_file" | jq 'if .http_response_code==200 then .http_response else "skippy" end '| grep -v skippy | wc -l)" (200 OK) response records for POCLOUD"
+echo "Located"$(cat "$pocloud_records_file" | jq 'if .http_response_code==400 then .http_response else "skippy" end '| grep -v skippy | wc -l)" (400 User Error) response records for POCLOUD"
+echo "Located"$(cat "$pocloud_records_file" | jq 'if .http_response_code==404 then .http_response else "skippy" end '| grep -v skippy | wc -l)" (404 Not Found) response records for POCLOUD"
+echo "Located"$(cat "$pocloud_records_file" | jq 'if .http_response_code==500 then .http_response else "skippy" end '| grep -v skippy | wc -l)" (500 Server Error) response records for POCLOUD"
+echo "Located"$(cat "$pocloud_records_file" | jq 'if .http_response_code==502 then .http_response else "skippy" end '| grep -v skippy | wc -l)" (502 Bad Gateway) response records for POCLOUD"
+
+
 # all 400 errors
 export all_400_response_records_file="./all_400_records"
 cat "$combined_log_file" | jq '.[] | if .http_response_code==400 then . else "dropme" end' | grep -v dropme > "$all_400_response_records_file"
