@@ -1,0 +1,4 @@
+#!/bin/bash
+
+
+cat $1 | awk 'BEGIN{print "[";}{if(NR>1){print ",";}printf("%s",$0);}END{print ""; print "]"}'
