@@ -78,17 +78,20 @@ echo "Located"$(cat "$pocloud_records_file" | jq 'if .http_response_code==502 th
 # all 400 errors
 export all_400_response_records_file="./all_400_records"
 cat "$combined_log_file" | jq '.[] | if .http_response_code==400 then . else empty end'  > "$all_400_response_records_file"
-echo "Located"$(cat "$all_400_response_records_file" | jq '.http_response_code' | wc -l)" (400 User Error) response records."
-echo "Located"$(cat "$all_400_response_records_file" | jq 'if .collectionId!=null and (.collectionId | contains("login")) then . else empty end'  | jq '.collectionId' | wc -l)" (400 User Error) response records from the login endpoint."
+echo "Located"$(cat "$all_400_response_records_file" | jq '.http_response_code' | wc -l)" HTTP 400 (User Error) response records."
+echo "Located"$(cat "$all_400_response_records_file" | jq 'if .collectionId!=null and (.collectionId | contains("login")) then . else empty end'  | jq '.collectionId' | wc -l)\
+    " HTTP 400 (User Error) response records from the login endpoint."
+
+cat "$all_400_response_records_file" | jq '{ "collectionId": .collectionId, "user_ip": .user_ip, "user_id": .user_id }'
 
 
 
 
+cat "$combined_log_file" | jq '.[] | if .http_response_code==400 then { "collectionId": .collectionId, "user_ip": .user_ip, "user_id": .user_id,  "query_string": .bes."hyrax-query-string" } else empty end'
 
 
 
-
-
+cat "$combined_log_file" | jq '.[] | if .http_response_code==400 then  if .bes then { "collectionId": .collectionId, "user_ip": .user_ip, "user_id": .user_id, "query_string": .bes."hyrax-query-string" } else { "collectionId": .collectionId, "user_ip": .user_ip, "user_id": .user_id "query_string": "-" } end else empty end'
 
 
 
