@@ -203,8 +203,32 @@ def get_matches(records:list, search_key:str, search_value:str, destination_name
     loggy("")
     return matching_records
 
+def convert_iso_to_unix(iso_string):
+    """
+    Converts an ISO 8601 formatted string to a Unix timestamp.
+    """
+    try:
+        time_format = "%Y-%m-%dT%H:%M:%S%z"
+        dt = datetime.strptime(iso_string, time_format) #Handle Z timezones
+        unix_timestamp = dt.timestamp()
+        return int(unix_timestamp) #return as an integer.
+    except ValueError as e:
+        stderr(f"Error: Invalid ISO 8601 format: {e}")
+        return None  # Or raise the exception, depending on your needs.
+    except Exception as e:
+        stderr(f"An unexpected error occurred: {e}")
+        return None
 
+def get_completion_time(response_log_record: dict, default_time: int):
+    # What time was the request completed?
+    # From the metrics_log_record we get the value of the "time_completed" key
+    # The value is formatted as:  YYYY-MM-DDTHH:MM:SSZ ("2025-02-14T07:00:05+0000")
+    end_time_str = response_log_record.get("time_completed", "")
+    end_time = default_time
+    if end_time_str != "":
+        end_time = convert_iso_to_unix(end_time_str)
 
+    return end_time
 
 def get_request_record(target_request_id:str,
                 request_log_records: list,
@@ -226,6 +250,8 @@ def get_request_record(target_request_id:str,
 
     respLog = "response_log"
     response_log = get_match(response_log_records, request_id_key, target_request_id, respLog)
+
+    # completion_time = get_completion_time(response_log)
 
     merged_olfs = {**request_log.get(reqLog), **response_log.get(respLog)}
     loggy(f"{prolog}Merged olfs log records for {request_id_key}: {target_request_id}")
@@ -314,41 +340,49 @@ def main():
     global bes_log_request_id_key
 
     import argparse
-    parser = argparse.ArgumentParser(description="This application can be used to located log entries for a specific "
-                                                 "request_id, or it can be used to merge the three log streams: "
-                                                 "Cloudwatch request_log, Cloudwatch response_log and the BES "
-                                                 "application log into a single file using the request_id values as "
-                                                 "the joining index.")
+    long_descritpion = ("This application can be used to located log entries for a specific "
+                        "request_id, or it can be used to merge the three log streams: "
+                        "Cloudwatch request_log, Cloudwatch response_log and the BES "
+                        "application log into a single file using the request_id "
+                        "values as the joining index.")
+
+    parser = argparse.ArgumentParser(description=long_descritpion)
     parser.add_argument("-v", "--verbose",
                         help="Increase output verbosity.",
                         action="store_true")
 
     parser.add_argument("-i", "--request_id",
-                        help="The request-id to find in the logs.",
+                        help=f"The request-id to find in the logs. default: IS NOT SET",
                         default="")
 
+    default="response_log.json"
     parser.add_argument("-r", "--response_log",
-                        help="The CloudWatch Metrics response_log for the hyrax log group.",
-                        default="response_log.json")
+                        help=f"The CloudWatch Metrics response_log for the hyrax log group. default: {default}",
+                        default=default)
 
+    default="request_log.json"
     parser.add_argument("-q", "--request_log",
-                        help="The CloudWatch Metrics request_log for the hyrax log group.",
-                        default="request_log.json")
+                        help=f"The CloudWatch Metrics request_log for the hyrax log group. default: {default}",
+                        default=default)
 
+    default="bes_log.json"
     parser.add_argument("-b", "--bes_log",
-                        help="The BES application log converted to JSON by beslog2json.py",
+                        help=f"The BES application log converted to JSON by beslog2json.py. default: {default}",
                         default="bes_log.json")
 
+    default="hyrax-"
     parser.add_argument("-p", "--bes_prefix",
-                        help="A prefix for all of the bes log keys. Check log file!",
+                        help=f"A prefix for all of the bes log keys. Check log file! default: {default}",
                         default="hyrax-")
 
+    default="M"
     parser.add_argument("-t", "--type",
-                        help="Type of operation: R for find request record by request id, M for merge all records by request id.",
+                        help=f"Type of operation: R for find request record by request id, M for merge all records by request id. default: {default}",
                         default="M")
 
+    default="hyrax_combined_logs.json"
     parser.add_argument("-o", "--output",
-                        help="Output file name.",
+                        help=f"Output file name. default: {default}",
                         default="hyrax_combined_logs.json")
 
 
