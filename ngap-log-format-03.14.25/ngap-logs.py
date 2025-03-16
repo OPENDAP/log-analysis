@@ -73,7 +73,6 @@ def get_records(source_file: str):
 
     Returns:
         The records as a list.
-
     """
     prolog = "get_records() - "
     failed = False
@@ -99,7 +98,7 @@ def get_records(source_file: str):
     # We can only get here if both ingest methods failed.
     stderr(f"{prolog}ERROR: File ingest for: '{source_file}' failed. Exiting...")
 
-    if(failed):
+    if failed:
         exit(400)
     else:
         return []
@@ -290,20 +289,13 @@ def get_merged( request_log_file: str,
     response_log_records = get_records(response_log_file)
     bes_log_records = get_records(bes_log_file)
 
-    # Build an index (a dictionary) the all the bes records using bes_log_request_id_key as the key,
-    # and include everything.
-    bes_log_index = {
-        record.get(bes_log_request_id_key,""): record
-        for record in bes_log_records
-        if record.get(bes_log_type_key,"") != ""
-    }
-
-    request_ids = request_log_records
-    request_ids = {
+    # Build a list of all the request_id values in the request_log_records
+    request_ids = [
         record.get(request_id_key,"")
         for record in request_log_records
         if record.get(request_id_key,"") != ""
-    }
+    ]
+    # Now make a dictionary of all the request lifecycle records
     merged_logs = {}
     for request_id in request_ids:
         merged_logs[request_id] = get_request_record(request_id,request_log_records,response_log_records,bes_log_records)
