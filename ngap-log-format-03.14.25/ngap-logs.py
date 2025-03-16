@@ -61,8 +61,6 @@ bes_log_request_id_key = "request-id"
 bes_log_type_key ="type"
 bes_log_prefix=""
 
-read_raw_json=False
-
 
 # TODO - Make this "peek" at the file ??
 def get_records(source_file: str):
@@ -78,38 +76,66 @@ def get_records(source_file: str):
         The records as a list.
 
     """
-    if read_raw_json:
-        return get_raw_records(source_file)
+    prolog = "get_records() - "
+    failed = False
+    loggy(f"{prolog}BEGIN")
+    try:
+        # Try as a raw json file.
+        try:
+            return get_raw_records(source_file)
+        except json.JSONDecodeError:
+            stderr(f"{prolog}WARNING: Fail to parse records as a raw json list (no enclosing square brackets, no commas between top level).")
+
+        # Try as a list formatted json file.
+        loggy(f"{prolog}Ingest as raw json records failed, trying as a list-o-json-records...")
+        try:
+            return get_list_records(source_file)
+        except json.JSONDecodeError:
+            stderr(f"{prolog}WARNING: Fail to parse records as a json list: '[{{}},{{}},{{}}]'.")
+
+        failed = True
+    finally:
+        loggy(f"{prolog}END")
+
+    # We can only get here if both ingest methods failed.
+    stderr(f"{prolog}ERROR: File ingest for: '{source_file}' failed. Exiting...")
+
+    if(failed):
+        exit(400)
     else:
-        return get_list_records(source_file)
+        return []
 
 def get_list_records(source_file: str):
-    prolog = "get_records() - "
+    prolog = "get_list_records() - "
     # Load the metrics log records. (e.g., job details)
-    loggy(f"{prolog}Loading records from: '{source_file}'")
-    with open(source_file, 'r') as f:
-        records = json.load(f)
+    loggy(f"{prolog}Loading a list of json records from: '{source_file}'")
+    try:
+        with open(source_file, 'r') as f:
+            records = json.load(f)
+    except FileNotFoundError:
+        stderr(f"{prolog}ERROR: File not found. path: '{source_file}'")
+        exit(404)
+
     loggy(f"{prolog}Loaded {len(records)} records from '{source_file}'.")
     return records
 
 def get_raw_records(source_file: str):
     prolog = "get_raw_records() - "
-    loggy(f"{prolog}Loading raw records from: '{source_file}'")
+    loggy(f"{prolog}Loading raw json records from: '{source_file}'")
     records = []
-    linenum=0
+    line_num=0
     try:
         with open(source_file, 'r') as file:
             for line in file:
-                try:
-                    json_object = json.loads(line.strip())
-                    records.append(json_object)
-                except json.JSONDecodeError:
-                    stderr(f"{prolog}ERROR! Failed to decoding json from line[{linenum}]: {line.strip()}")
-                    exit(1)
-    except FileNotFoundError:
-        stderr(f"ERROR! File not found at path: {source_file}")
+                line_num += 1
+                json_object = json.loads(line.strip())
+                records.append(json_object)
 
-    loggy(f"{prolog}Loaded {len(records)} records from '{source_file}'.")
+    except FileNotFoundError:
+        stderr(f"{prolog}ERROR: File not found. path: '{source_file}'")
+        exit(404)
+
+    loggy(f"{prolog}END Loaded {len(records)} records in {line_num} lines from file: '{source_file}'")
     return records
 
 
@@ -147,9 +173,9 @@ def get_matches(records:list, search_key:str, search_value:str, destination_name
 
 
 def get_request_record(target_request_id:str,
-                request_log_records: str,
-                response_log_records: str,
-                bes_log_records: str):
+                request_log_records: list,
+                response_log_records: list,
+                bes_log_records: list):
     prolog = "get_request_record() - "
     reqLog = "request_log"
     request_log = get_match(request_log_records, request_id_key, target_request_id, reqLog)
@@ -181,9 +207,9 @@ def get_request(target_request_id:str,
     Search for the life of request_id in the various input files. Make unified json response.
     Args:
         target_request_id: The request_ir to investigate.
-        request_log: The CloudWatch request_log for the hyrax log group.
-        response_log: The CloudWatch response_log for the hyrax log group
-        bes_log: The BES application log, encoded as json. from the same time period as the metrics log.
+        request_log_file: The CloudWatch request_log for the hyrax log group.
+        response_log_file: The CloudWatch response_log for the hyrax log group
+        bes_log_file: The BES application log, encoded as json. from the same time period as the metrics log.
         out_file: Filename where the JSON should be written.
 
     Returns: nothing
@@ -196,8 +222,8 @@ def get_request(target_request_id:str,
     request_log_record = get_request_record(target_request_id,request_log_records,response_log_records, bes_log_records)
 
     # Write the results to the file
-    with open(out_file, 'w') as f:
-        json.dump(request_log_record, f, indent=2)
+    with open(out_file, 'w') as fio:
+        json.dump(request_log_record, fio, indent=2)
 
 def get_merged( request_log_file: str,
                 response_log_file: str,
@@ -207,9 +233,9 @@ def get_merged( request_log_file: str,
     Merge the request life cycle data from the three logs: Cloudwatch request_log, Cloudwatch response_log and the
     BES application log (bes.log).
     Args:
-        request_log: The CloudWatch request_log for the hyrax log group.
-        response_log: The CloudWatch response_log for the hyrax log group
-        bes_log: The BES application log, encoded as json. from the same time period as the metrics log.
+        request_log_file: The CloudWatch request_log for the hyrax log group.
+        response_log_file: The CloudWatch response_log for the hyrax log group
+        bes_log_file: The BES application log, encoded as json. from the same time period as the metrics log.
         out_file: Filename where the JSON should be written.
 
     Returns: nothing
@@ -238,8 +264,8 @@ def get_merged( request_log_file: str,
         merged_logs[request_id] = get_request_record(request_id,request_log_records,response_log_records,bes_log_records)
 
     # Write the results to the file
-    with open(out_file, 'w') as f:
-        json.dump(merged_logs, f, indent=2)
+    with open(out_file, 'w') as fio:
+        json.dump(merged_logs, fio, indent=2)
 
 
 
@@ -249,7 +275,6 @@ def main():
     global bes_log_prefix
     global bes_log_type_key
     global bes_log_request_id_key
-    global read_raw_json
 
     import argparse
     parser = argparse.ArgumentParser(description="WIP")
@@ -281,10 +306,6 @@ def main():
                         help="Type of operation: R for find request record by request id, M for merge all records by request id.",
                         default="M")
 
-    parser.add_argument("-R", "--raw",
-                        help="Read raw json from all Files. (i.e. No end of line commas or enclosing square brackets)",
-                        action="store_true")
-
     parser.add_argument("-o", "--output",
                         help="Output file name.",
                         default="hyrax_combined_logs.json")
@@ -301,8 +322,6 @@ def main():
         bes_log_type_key = args.bes_prefix + bes_log_type_key
         bes_log_prefix = bes_log_prefix = args.bes_prefix
 
-    read_raw_json = args.raw
-    loggy(f"read_raw_json: {read_raw_json}")
 
     loggy(f"bes_log_type_key: {bes_log_type_key}")
 
