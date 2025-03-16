@@ -3,9 +3,7 @@
 import json
 import sys
 from datetime import datetime
-from webbrowser import Opera
 
-import beslog2json
 """
 Joins our merged CloudWatch Metrics logs (hyrax_request_log and hyrax_response_log), with the 
 json encoded BES application logs for the same time period.
@@ -63,13 +61,54 @@ bes_log_request_id_key = "request-id"
 bes_log_type_key ="type"
 bes_log_prefix=""
 
+read_raw_json=False
 
+
+# TODO - Make this "peek" at the file ??
 def get_records(source_file: str):
+    """
+    Reads JSON records from the supplied file into a list. Is the read_raw_json flag is set True then the file is
+    assumed to contain a collection of objects without the delimiting json list syntax of commas and square brackets.
+    If the read_raw_json flag is set to False, then the file is assumed to contain a json list: [{},{},{}] of objects
+    with the attendant commas and enclosing square brackets.
+    Args:
+        source_file:
+
+    Returns:
+        The records as a list.
+
+    """
+    if read_raw_json:
+        return get_raw_records(source_file)
+    else:
+        return get_list_records(source_file)
+
+def get_list_records(source_file: str):
     prolog = "get_records() - "
     # Load the metrics log records. (e.g., job details)
     loggy(f"{prolog}Loading records from: '{source_file}'")
     with open(source_file, 'r') as f:
         records = json.load(f)
+    loggy(f"{prolog}Loaded {len(records)} records from '{source_file}'.")
+    return records
+
+def get_raw_records(source_file: str):
+    prolog = "get_raw_records() - "
+    loggy(f"{prolog}Loading raw records from: '{source_file}'")
+    records = []
+    linenum=0
+    try:
+        with open(source_file, 'r') as file:
+            for line in file:
+                try:
+                    json_object = json.loads(line.strip())
+                    records.append(json_object)
+                except json.JSONDecodeError:
+                    stderr(f"{prolog}ERROR! Failed to decoding json from line[{linenum}]: {line.strip()}")
+                    exit(1)
+    except FileNotFoundError:
+        stderr(f"ERROR! File not found at path: {source_file}")
+
     loggy(f"{prolog}Loaded {len(records)} records from '{source_file}'.")
     return records
 
@@ -104,6 +143,9 @@ def get_matches(records:list, search_key:str, search_value:str, destination_name
     loggy("")
     return matching_records
 
+
+
+
 def get_request_record(target_request_id:str,
                 request_log_records: str,
                 response_log_records: str,
@@ -121,17 +163,6 @@ def get_request_record(target_request_id:str,
 
     # Build an index (a dictionary) the of the bes log records whose  request id matches the target value.
     loggy(f"{prolog}Checking BES log for : {target_request_id}")
-    bes_log_entries = [
-        record
-        for record in bes_log_records
-        if record.get(bes_log_request_id_key, "") == target_request_id]
-
-    if len(bes_log_entries) > 0:
-        loggy(f"{prolog}--------------------------------------------------")
-    loggy(f"{prolog}Found {len(bes_log_entries)} BES log records for {request_id_key}: {target_request_id}")
-    loggy(json.dumps(bes_log_entries, indent=2))
-    loggy("")
-
     bes_log_entries = get_matches(bes_log_records, bes_log_request_id_key, target_request_id, "")
 
     result_record = {**merged_olfs, "bes": bes_log_entries}
@@ -173,9 +204,9 @@ def get_merged( request_log_file: str,
                 bes_log_file: str,
                 out_file: str):
     """
-    Search for the life of request_id in the various input files. Make unified json response.
+    Merge the request life cycle data from the three logs: Cloudwatch request_log, Cloudwatch response_log and the
+    BES application log (bes.log).
     Args:
-        target_request_id: The request_ir to investigate.
         request_log: The CloudWatch request_log for the hyrax log group.
         response_log: The CloudWatch response_log for the hyrax log group
         bes_log: The BES application log, encoded as json. from the same time period as the metrics log.
@@ -218,6 +249,8 @@ def main():
     global bes_log_prefix
     global bes_log_type_key
     global bes_log_request_id_key
+    global read_raw_json
+
     import argparse
     parser = argparse.ArgumentParser(description="WIP")
     parser.add_argument("-v", "--verbose",
@@ -246,7 +279,11 @@ def main():
 
     parser.add_argument("-t", "--type",
                         help="Type of operation: R for find request record by request id, M for merge all records by request id.",
-                        default="R")
+                        default="M")
+
+    parser.add_argument("-R", "--raw",
+                        help="Read raw json from all Files. (i.e. No end of line commas or enclosing square brackets)",
+                        action="store_true")
 
     parser.add_argument("-o", "--output",
                         help="Output file name.",
@@ -263,6 +300,9 @@ def main():
         bes_log_request_id_key = args.bes_prefix + bes_log_request_id_key
         bes_log_type_key = args.bes_prefix + bes_log_type_key
         bes_log_prefix = bes_log_prefix = args.bes_prefix
+
+    read_raw_json = args.raw
+    loggy(f"read_raw_json: {read_raw_json}")
 
     loggy(f"bes_log_type_key: {bes_log_type_key}")
 
