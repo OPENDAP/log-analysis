@@ -277,7 +277,11 @@ def main():
     global bes_log_request_id_key
 
     import argparse
-    parser = argparse.ArgumentParser(description="WIP")
+    parser = argparse.ArgumentParser(description="This application can be used to located log entries for a specific "
+                                                 "request_id, or it can be used to merge our three log streams, the "
+                                                 "Cloudwatch request_log, Cloudwatch response_log and the BES "
+                                                 "application log into a single file using the request_id values as "
+                                                 "the joining index.")
     parser.add_argument("-v", "--verbose",
                         help="Increase output verbosity.",
                         action="store_true")
