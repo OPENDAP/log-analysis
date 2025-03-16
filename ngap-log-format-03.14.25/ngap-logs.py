@@ -65,10 +65,9 @@ bes_log_prefix=""
 # TODO - Make this "peek" at the file ??
 def get_records(source_file: str):
     """
-    Reads JSON records from the supplied file into a list. Is the read_raw_json flag is set True then the file is
-    assumed to contain a collection of objects without the delimiting json list syntax of commas and square brackets.
-    If the read_raw_json flag is set to False, then the file is assumed to contain a json list: [{},{},{}] of objects
-    with the attendant commas and enclosing square brackets.
+    Reads JSON records from the supplied file into a list. First it tries to read the file as a collection of json
+    objects without the delimiting json list syntax of commas and square brackets. If that fails, then it tries to
+    read the file as a json list of objects with the attendant commas and enclosing square brackets: [{},{},{}]
     Args:
         source_file:
 
@@ -106,6 +105,13 @@ def get_records(source_file: str):
         return []
 
 def get_list_records(source_file: str):
+    """
+    Reads a list of json records from source_file and returns a list.
+    Args:
+        source_file: The file containing a json list of records.
+
+    Returns: The list of records.
+    """
     prolog = "get_list_records() - "
     # Load the metrics log records. (e.g., job details)
     loggy(f"{prolog}Loading a list of json records from: '{source_file}'")
@@ -120,6 +126,13 @@ def get_list_records(source_file: str):
     return records
 
 def get_raw_records(source_file: str):
+    """
+    Reads a raw json records from source_file and returns a list.
+    Args:
+        source_file: The file containing the raw json objects.
+
+    Returns: The list of records.
+    """
     prolog = "get_raw_records() - "
     loggy(f"{prolog}Loading raw json records from: '{source_file}'")
     records = []
@@ -140,6 +153,17 @@ def get_raw_records(source_file: str):
 
 
 def get_match(records:list, search_key:str, search_value:str, destination_name:str ):
+    """
+    Finds the first matching record in records.
+    Args:
+        records: The list of records to search
+        search_key: The key name whose value must match the search_value
+        search_value: The value search_key to match
+        destination_name: The name of the object to be returned
+
+    Returns: An object containing the matching record, or None if no match is found.
+
+    """
     prolog = "get_match() - "
     loggy(f"{prolog}Checking records for : '{search_key}': {search_value}")
     matching_record = {
@@ -153,6 +177,17 @@ def get_match(records:list, search_key:str, search_value:str, destination_name:s
     return matching_record
 
 def get_matches(records:list, search_key:str, search_value:str, destination_name:str ):
+    """
+    Finds all matching records in the records list
+    Args:
+        records: The list of records to search
+        search_key: The key name whose value must match the search_value
+        search_value: The value to match
+        destination_name: The name of the object to be returned
+
+    Returns: An object containing the matching records, or an empty object if no match is found.
+
+    """
     prolog = "get_matches() - "
     # Build an index (a dictionary) the of the bes log records whose  request id matches the target value.
     loggy(f"{prolog}Checking records for '{search_key}': {search_value}")
@@ -176,6 +211,16 @@ def get_request_record(target_request_id:str,
                 request_log_records: list,
                 response_log_records: list,
                 bes_log_records: list):
+    """
+    Builds the request lifecycle record for target_request_id.
+    Args:
+        target_request_id: The request_id whose lifecycle to locate.
+        request_log_records: The request log records.
+        response_log_records: The response log records.
+        bes_log_records: The bes application log records.
+
+    Returns: The complete lifecycle record for target_request_id.
+    """
     prolog = "get_request_record() - "
     reqLog = "request_log"
     request_log = get_match(request_log_records, request_id_key, target_request_id, reqLog)
@@ -278,7 +323,7 @@ def main():
 
     import argparse
     parser = argparse.ArgumentParser(description="This application can be used to located log entries for a specific "
-                                                 "request_id, or it can be used to merge our three log streams, the "
+                                                 "request_id, or it can be used to merge the three log streams: "
                                                  "Cloudwatch request_log, Cloudwatch response_log and the BES "
                                                  "application log into a single file using the request_id values as "
                                                  "the joining index.")
