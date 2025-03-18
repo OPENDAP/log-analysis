@@ -12,12 +12,14 @@ json encoded BES application logs for the same time period.
 verbose = False
 max_records = 0
 
+
 def loggy(message: str):
     """
-    Prints a log message tpo stderr when verbose is enabled.
+    Prints a log message to stderr when verbose is enabled.
     """
     if verbose:
-        print(f"# {message}",file=sys.stderr)
+        print(f"# {message}", file=sys.stderr)
+
 
 def stderr(message: str):
     """
@@ -25,7 +27,8 @@ def stderr(message: str):
     """
     print(f"# {message}", file=sys.stderr)
 
-def wrap_a_line(msg:str, count:int, width=80):
+
+def wrap_a_line(msg: str, count: int, width=80):
     """
     A progress bar which will inject a newline when count % width is zero.
     """
@@ -40,9 +43,9 @@ def convert_iso_to_unix(iso_string):
     """
     try:
         time_format = "%Y-%m-%dT%H:%M:%S%z"
-        dt = datetime.strptime(iso_string, time_format) #Handle Z timezones
+        dt = datetime.strptime(iso_string, time_format)  # Handle Z timezones
         unix_timestamp = dt.timestamp()
-        return int(unix_timestamp) #return as an integer.
+        return int(unix_timestamp)  # return as an integer.
     except ValueError as e:
         stderr(f"Error: Invalid ISO 8601 format: {e}")
         return None  # Or raise the exception, depending on your needs.
@@ -51,17 +54,17 @@ def convert_iso_to_unix(iso_string):
         return None
 
 
-application_log_request_type= "request"
-application_log_info_type= "info"
-application_log_error_type= "error"
-application_log_verbose_type= "verbose"
-application_log_timing_type= "timing"
+application_log_request_type = "request"
+application_log_info_type = "info"
+application_log_error_type = "error"
+application_log_verbose_type = "verbose"
+application_log_timing_type = "timing"
+
 
 def join_metrics_log_with_application_log_entries(
         metrics_log: str,
         application_log: str,
         out_file: str):
-
     """
     Joins our merged CloudWatch Metrics logs (hyrax_request_log and hyrax_response_log), with the
     json encoded BES application logs for the same time period.
@@ -97,23 +100,23 @@ def join_metrics_log_with_application_log_entries(
     # Build an index (a dictionary) the application records using application_log_request_id_key as the key,
     # only including the application_log_request_type entries.
     application_log_index = {
-        record.get(application_log_request_id_key,""): record
+        record.get(application_log_request_id_key, ""): record
         for record in application_log_records
-        if record.get("hyrax-type","") == application_log_request_type
+        if record.get("hyrax-type", "") == application_log_request_type
     }
 
     # Iterate over the records in metrics_log_records,
     # merge each with the corresponding application_log_records record(s). A BES application log records are located
     # by matching the values of the metrics_request_id_key and the application_log_request_id_key in the teo records.
     joined_records = []
-    rec_num=0
-    matched_records=0
+    rec_num = 0
+    matched_records = 0
     for metrics_log_record in metrics_log_records:
-        rec_num+=1
+        rec_num += 1
 
         # Progress Bar :)
         if not verbose:
-            wrap_a_line(".",rec_num, 100)
+            wrap_a_line(".", rec_num, 100)
 
         loggy(f"-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --")
 
@@ -126,15 +129,15 @@ def join_metrics_log_with_application_log_entries(
             if len(application_log_record) > 0:
                 # Find the things we need- instance-id, pid, start and end times so we can mine
                 # the application-log for messages.
-                pid = application_log_record.get("hyrax-pid","")
-                instance_id = application_log_record.get("hyrax-instance-id","")
-                bes_start_time = int(application_log_record.get("hyrax-time",0))
+                pid = application_log_record.get("hyrax-pid", "")
+                instance_id = application_log_record.get("hyrax-instance-id", "")
+                bes_start_time = int(application_log_record.get("hyrax-time", 0))
                 loggy(f"pid: {pid} instance_id: {instance_id} bes_start_time: {bes_start_time}")
 
                 # What time was the request completed?
                 # From the metrics_log_record we get the value of the "time_completed" key
                 # The value is formatted as:  YYYY-MM-DDTHH:MM:SSZ ("2025-02-14T07:00:05+0000")
-                end_time_str = metrics_log_record.get("time_completed","" )
+                end_time_str = metrics_log_record.get("time_completed", "")
                 end_time = bes_start_time
                 if end_time_str != "":
                     end_time = convert_iso_to_unix(end_time_str)
@@ -147,20 +150,23 @@ def join_metrics_log_with_application_log_entries(
                        record.get("hyrax-type", "") != application_log_request_type and
                        bes_start_time <= int(record.get("hyrax-time", bes_start_time)) <= end_time
                 ]
-                loggy(f"Found {len(related_application_log_entries)} related_application_log_entries for pid: {pid} on instance: {instance_id} .")
+                loggy(
+                    f"Found {len(related_application_log_entries)} related_application_log_entries for pid: {pid} on instance: {instance_id} .")
 
                 # Join the things
-                joined = {**metrics_log_record, "bes": {application_log_request_type:{**application_log_record}, "related_entries": related_application_log_entries}}
+                joined = {**metrics_log_record, "bes": {application_log_request_type: {**application_log_record},
+                                                        "related_entries": related_application_log_entries}}
                 joined_records.append(joined)
                 matched_records += 1 + len(related_application_log_entries)
 
             else:
-                loggy(f"Failed to locate the application_log_request_id_key: {application_log_request_id_key} with value: {metrics_request_id} in the application_log_index.")
+                loggy(
+                    f"Failed to locate the application_log_request_id_key: {application_log_request_id_key} with value: {metrics_request_id} in the application_log_index.")
                 joined_records.append(metrics_log_record)
         else:
             loggy(f"Failed to locate key {metrics_request_id_key} in metrics_log_record: {metrics_log_record}")
 
-        if max_records!=0 and rec_num >=max_records:
+        if max_records != 0 and rec_num >= max_records:
             break
 
     # Write the results to the file
@@ -168,7 +174,6 @@ def join_metrics_log_with_application_log_entries(
         json.dump(joined_records, f, indent=2)
 
     stderr(f"\nProcessed {len(joined_records)} metrics_log records. Joined {matched_records} application_log records.")
-
 
 
 def main():
@@ -194,9 +199,8 @@ def main():
                         help="Output file name.",
                         default="hyrax-combined-logs.json")
 
-
     args = parser.parse_args()
-    verbose=args.verbose
+    verbose = args.verbose
 
     loggy(f"verbose: {verbose}")
     loggy(f"args: {args}")
