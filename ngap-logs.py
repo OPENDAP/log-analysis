@@ -82,7 +82,7 @@ def get_records(source_file: str):
         try:
             return get_raw_records(source_file)
         except json.JSONDecodeError:
-            stderr(f"{prolog}WARNING: Fail to parse records as a raw json list (no enclosing square brackets, no commas between top level).")
+            stderr(f"{prolog}WARNING: Fail to ingest records as a RAW json list (no enclosing square brackets, no commas between top level). Will try to ingest as json list...")
 
         # Try as a list formatted json file.
         loggy(f"{prolog}Ingest as raw json records failed, trying as a list-o-json-records...")
@@ -171,6 +171,8 @@ def get_match(records:list, search_key:str, search_value:str, destination_name:s
         if record.get(search_key, "") == search_value
     }
     loggy(f"{prolog}Found {len(matching_record)} record for '{search_key}': {search_value}")
+    if not matching_record:
+        matching_record = { destination_name: { search_key: search_value, "ERROR": f"Failed to locate matching record in {destination_name}"}}
     loggy(json.dumps(matching_record, indent=2))
     loggy("")
     return matching_record
@@ -246,14 +248,22 @@ def get_request_record(target_request_id:str,
     """
     prolog = "get_request_record() - "
     reqLog = "request_log"
+    loggy(f"{prolog}Checking request_log for {request_id_key}: {target_request_id}")
     request_log = get_match(request_log_records, request_id_key, target_request_id, reqLog)
+    if request_log is None:
+        stderr(f"{prolog}WARNING: No request log found for {target_request_id}")
 
+    loggy(f"{prolog}Checking response_log for {request_id_key}: {target_request_id}")
     respLog = "response_log"
     response_log = get_match(response_log_records, request_id_key, target_request_id, respLog)
+    if response_log is None:
+        stderr(f"{prolog}WARNING: No response log found for {target_request_id}")
+
+
+    merged_olfs = {**request_log.get(reqLog), **response_log.get(respLog)}
 
     # completion_time = get_completion_time(response_log)
 
-    merged_olfs = {**request_log.get(reqLog), **response_log.get(respLog)}
     loggy(f"{prolog}Merged olfs log records for {request_id_key}: {target_request_id}")
     loggy(json.dumps(merged_olfs, indent=2))
 
@@ -322,8 +332,12 @@ def get_merged( request_log_file: str,
         if record.get(request_id_key,"") != ""
     ]
     # Now make a dictionary of all the request lifecycle records
+    id_num = 0
     merged_logs = {}
     for request_id in request_ids:
+        id_num += 1
+        loggy(f"{prolog}--------------------------------------------------------------------------------------")
+        loggy(f"{prolog}IdCount: {id_num}. Merging request_id: {request_id} ")
         merged_logs[request_id] = get_request_record(request_id,request_log_records,response_log_records,bes_log_records)
 
     # Write the results to the file
