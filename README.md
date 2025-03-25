@@ -1,5 +1,6 @@
 # Log Processing 
 
+## What's here
 Python code to process raw BES logs that use the |&| separators.
 
 Now contains code to download Cloud Watch logs.
@@ -9,6 +10,10 @@ download_logs.py: Download CloudWatch json for a given log group and date range.
 response_times.py: Take many 'timing.txt' files made by the hyrax500-2 client and build
 		   a single csv file that's easy to graph.
 
+## How to run the tests
+Like this ```python -m unittest discover -p "test*.py" tests```
+
+## Usage info
 Using jq on the JSON downloaded by download_logs.py:
 
 Here are some sample uses:
