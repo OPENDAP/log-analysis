@@ -84,7 +84,7 @@ class TestJoinJsonArrays(unittest.TestCase):
 
         out = StringIO()
         with contextlib.redirect_stdout(out):
-            join_json_arrays(self.left_file.name, self.right_file.name, 'id', self.result_file.name)
+            join_json_arrays(self.left_file.name, self.right_file.name, 'id', self.result_file.name, True)
         printed = out.getvalue()
         self.assertIn("Joined 1 records", printed)
 

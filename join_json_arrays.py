@@ -8,7 +8,7 @@ Joins two JSON arrays into a single JSON array.
 """
 
 
-def join_json_arrays(left_array: str, right_array: str, key: str, result: str):
+def join_json_arrays(left_array: str, right_array: str, key: str, result: str, verbose: bool = False):
     """
     For two arrays of JSON records, build an index from the 'right' array based on the
     JSON key 'key'. Then scan the records in 'left' for records using 'key' and join those
@@ -25,6 +25,7 @@ def join_json_arrays(left_array: str, right_array: str, key: str, result: str):
     :param right_array: JSON array used to make the index on 'key'
     :param key: The JSON key on which to form the index
     :param result: Filename where the JSON should be written.
+    :param verbose: Print verbose output.
     :return: nothing
     """
     # Load the left JSON array (e.g., job details)
@@ -51,7 +52,7 @@ def join_json_arrays(left_array: str, right_array: str, key: str, result: str):
     with open(result, 'w') as f:
         json.dump(joined_records, f, indent=2)
 
-    print(f"Joined {len(joined_records)} records.")
+    print(f"Joined {len(joined_records)} records.") if verbose else None
 
 
 def main():

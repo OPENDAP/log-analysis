@@ -64,7 +64,8 @@ application_log_timing_type = "timing"
 def join_metrics_log_with_application_log_entries(
         metrics_log: str,
         application_log: str,
-        out_file: str):
+        out_file: str,
+        verbose: bool = False):
     """
     Joins our merged CloudWatch Metrics logs (hyrax_request_log and hyrax_response_log), with the
     json encoded BES application logs for the same time period.
@@ -173,11 +174,12 @@ def join_metrics_log_with_application_log_entries(
     with open(out_file, 'w') as f:
         json.dump(joined_records, f, indent=2)
 
-    stderr(f"\nProcessed {len(joined_records)} metrics_log records. Joined {matched_records} application_log records.")
+    stderr(f"\nProcessed {len(joined_records)} metrics_log records. Joined {matched_records} application_log records.")\
+        if verbose else None
 
 
 def main():
-    global verbose;
+    global verbose
     import argparse
     parser = argparse.ArgumentParser(description="Joins the merged CloudWatch Metrics logs, hyrax_request_log "
                                                  "and hyrax_response_log sent from the OLFS, With the json encoded "

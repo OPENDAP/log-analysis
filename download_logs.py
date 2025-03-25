@@ -27,6 +27,21 @@ The response from boto3.client.filter_log_events has the form:
 
 
 def get_logs(log_group_name: str, start_time: str, end_time: str) -> list:
+    """
+    Get a list of log entries from the named AWS log group between start_time and end_time
+    Args:
+        log_group_name: Name of the log group
+        start_time: Get entries starting at this time
+        end_time: Only get entries until this time, or the current time if this is ""
+
+    Returns: A list of log entries between start_time and end_time
+    """
+
+    if start_time == "" or start_time is None:
+        raise ValueError("start_time is empty")
+    if log_group_name == "" or log_group_name is None:
+        raise ValueError("log_group_name is empty")
+
     # Convert start_time to milliseconds since epoch
     start_timestamp = int(datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%S").timestamp() * 1000)
 
@@ -64,6 +79,20 @@ def get_logs(log_group_name: str, start_time: str, end_time: str) -> list:
 
 
 def write_logs(all_events: list, output_file: str) -> None:
+    """
+    Write log events to a JSON file
+    Args:
+        all_events: The log events
+        output_file: The name of the output file
+
+    Returns: None
+    """
+
+    if all_events is None or len(all_events) == 0:
+        raise ValueError("all_events is empty")
+    if output_file == "" or output_file is None:
+        raise ValueError("output_file is empty")
+
     # Write events to JSON file
     with open(output_file, 'w') as f:
         print("[", file=f)

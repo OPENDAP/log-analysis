@@ -231,7 +231,7 @@ class TestJoinJsonArrays(unittest.TestCase):
         # Call the function
 
         join_metrics_log_with_application_log_entries(self.metrics_log_file.name, self.application_log_file.name, self.result_file.name)
-        loggy(f"self.result_file.name: {self.result_file.name}")
+        # loggy(f"self.result_file.name: {self.result_file.name}")
 
         # Verify that the output file contains the expected joined records.
         with open(self.result_file.name, 'r') as f:
