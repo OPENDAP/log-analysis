@@ -1,0 +1,4 @@
+The tests in here were written using ChatGPT o30mini-high. The matching tests
+in the parent directory were written using Google Gemini 2.0 Flash. Both done
+on 3/25/25 when we learned that we could us AI. I had to fix some of the resulting
+tests, as noted.
