@@ -5,7 +5,7 @@ export combined_log_file="./combined_log.json"
 # Find all the records in the $combined_log_file that do not have the BES record (aka unmatched records)
 # using the presence of the key name "bes" as the indicator
 export unmatched_records_file="./unmatched_records"
-cat "$combined_log_file" | jq '.[] | if has("bes") | not then . else "dropme" end' | grep -v dropme > "$unmatched_ngap_404_response_records_file"
+cat "$combined_log_file" | jq '.[] | if has("bes") | not then . else "dropme" end' | grep -v dropme > "$unmatched_records_file"
 echo "Located"$(cat "$unmatched_records_file" | jq '.http_response_code' | wc -l)" requests that lacked a BES component (aka unmatched requests)"
 
 
@@ -63,7 +63,7 @@ echo "Located"$(cat "$C2938661904_nsidc_cprd_records_file" | jq 'if .http_respon
 echo "Located"$(cat "$C2938661904_nsidc_cprd_records_file" | jq 'if .http_response_code==502 then .http_response else "skippy" end '| grep -v skippy | wc -l)" (502 Bad Gateway) response records for C2938661904-NSIDC_CPRD"
 
 
-# Get the all response records from C2938661904-NSIDC_CPRD (18644 records total)
+# Get the all response records from POCLOUD (18644 records total)
 export pocloud_records_file="./pocloud_records"
 cat "$combined_log_file" | jq '.[] | if .collectionId!=null and (.collectionId | contains("POCLOUD")) then . else "skippy"  end' | grep -v skippy | jq '.' > "$pocloud_records_file"
 echo "Located"$(cat "$pocloud_records_file" | jq '.http_response_code' | wc -l)" records for POCLOUD"
