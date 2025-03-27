@@ -9,6 +9,7 @@ log_processing.py: Turn bes logs into CSV, fix the times and split the log up by
 download_logs.py: Download CloudWatch json for a given log group and date range.
 response_times.py: Take many 'timing.txt' files made by the hyrax500-2 client and build
 		   a single csv file that's easy to graph.
+ngap-logs.py:
 
 ## How to run the tests
 Like this ```python -m unittest discover -p "test*.py" tests```
@@ -23,10 +24,10 @@ Get all the array elements where 'hyrax-type' is "start-up". Stamp and repeat fo
 How many elements in the array of records?
     jq 'length' info.json
 
-Find all of the records where 'hyrax-type' is not equal to "error", ...
+Find all the records where 'hyrax-type' is not equal to "error", ...
     jq '[ .[] | select((.["hyrax-type"] | IN("error", "info", "request", "start-up")) | not)]' output.txt > outliers.json
 
-Print all of the vlaues of the 'hyrax-message' key for each record and write them out as a JSON array of values
+Print all the values of the 'hyrax-message' key for each record and write them out as a JSON array of values
 jq '[ .[].["hyrax-message"]]' errors.json > error-messages.json
 
 For example, this set of commands will deconstruct the bes log information read using download_logs.py:
@@ -58,7 +59,7 @@ regex match operator (not sure they are called operators) and is more powerful b
 
 jq '[.[] | select(.["hyrax-message"] | (contains("timeout_expired()") or contains("BESTimeoutError") or contains("NgapApi.cc:304")) | not)]' errors.json > other_errors.json
 
-Here's how I split up all the errors for a 12 hour period from 00:00:00 to 12:00:00 on 2/12/25:
+Here's how I split up all the errors for a 12-hour period from 00:00:00 to 12:00:00 on 2/12/25:
 
 (hyrax500) jgallag4@GSLAL2023031970 2-12-25-prod % jq length errors.json CMR_not_found.json timeout_errors.json timeout_expired_errors.json other_errors.json 
 867
