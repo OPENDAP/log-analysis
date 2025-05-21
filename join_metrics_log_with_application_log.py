@@ -12,7 +12,6 @@ json encoded BES application logs for the same time period.
 verbose = False
 max_records = 0
 
-
 def loggy(message: str):
     """
     Prints a log message to stderr when verbose is enabled.
@@ -20,13 +19,11 @@ def loggy(message: str):
     if verbose:
         print(f"# {message}", file=sys.stderr)
 
-
 def stderr(message: str):
     """
     Prints a log message to stderr.
     """
     print(f"# {message}", file=sys.stderr)
-
 
 def wrap_a_line(msg: str, count: int, width=80):
     """

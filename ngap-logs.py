@@ -40,9 +40,9 @@ def convert_iso_to_unix(iso_string):
     """
     try:
         time_format = "%Y-%m-%dT%H:%M:%S%z"
-        dt = datetime.strptime(iso_string, time_format) #Handle Z timezones
+        dt = datetime.strptime(iso_string, time_format)  # Handle Z timezones
         unix_timestamp = dt.timestamp()
-        return int(unix_timestamp) #return as an integer.
+        return int(unix_timestamp)  # return as an integer.
     except ValueError as e:
         stderr(f"Error: Invalid ISO 8601 format: {e}")
         return None  # Or raise the exception, depending on your needs.
