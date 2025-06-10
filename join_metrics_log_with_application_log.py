@@ -178,9 +178,10 @@ def join_metrics_log_with_application_log_entries(
 def main():
     global verbose
     import argparse
-    parser = argparse.ArgumentParser(description="Joins the merged CloudWatch Metrics logs, hyrax_request_log "
-                                                 "and hyrax_response_log sent from the OLFS, With the json encoded "
-                                                 "BES application logs for the same time period.")
+    parser = argparse.ArgumentParser(description="Joins the merged CloudWatch log file (Which contains the combined "
+                                                 "hyrax_request_log and hyrax_response_log sent from the OLFS to "
+                                                 "CloudWatch), with the json encoded BES application logs for the "
+                                                 "same time period.")
     parser.add_argument("-v", "--verbose",
                         help="Increase output verbosity.",
                         action="store_true")
