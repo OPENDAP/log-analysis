@@ -18,9 +18,6 @@ def join_json_arrays(left_array: str, right_array: str, key: str, result: str, v
     each instance is unique. Similarly, while not every record in 'right' has 'key,' the
     instances of 'key' are also unique in 'right.'
 
-    :note: Make this return the merged document and let the caller decide if it should
-    be written to a file or used differently.
-
     :param left_array: JSON array to merge
     :param right_array: JSON array used to make the index on 'key'
     :param key: The JSON key on which to form the index

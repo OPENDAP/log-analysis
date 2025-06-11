@@ -52,17 +52,6 @@ echo "Located"$(cat "$nsidc_cprd_records_file" | jq 'if .http_response_code==404
 echo "Located"$(cat "$nsidc_cprd_records_file" | jq 'if .http_response_code==500 then .http_response else "skippy" end '| grep -v skippy | wc -l)" (500 Server Error) response records for NSIDC_CPRD"
 echo "Located"$(cat "$nsidc_cprd_records_file" | jq 'if .http_response_code==502 then .http_response else "skippy" end '| grep -v skippy | wc -l)" (502 Bad Gateway) response records for NSIDC_CPRD"
 
-# Get the all response records from C2938661904-NSIDC_CPRD (18644 records total)
-export C2938661904_nsidc_cprd_records_file="./C2938661904_nsidc_cprd_records"
-cat "$combined_log_file" | jq 'to_entries[] | .value | if .collectionId!=null and (.collectionId | contains("C2938661904-NSIDC_CPRD")) then . else "skippy"  end' | grep -v skippy | jq '.' > "$C2938661904_nsidc_cprd_records_file"
-echo "Located"$(cat "$C2938661904_nsidc_cprd_records_file" | jq '.http_response_code' | wc -l)" records for C2938661904-NSIDC_CPRD"
-echo "Located"$(cat "$C2938661904_nsidc_cprd_records_file" | jq 'if .http_response_code==200 then .http_response else "skippy" end '| grep -v skippy | wc -l)" (200 OK) response records for C2938661904-NSIDC_CPRD"
-echo "Located"$(cat "$C2938661904_nsidc_cprd_records_file" | jq 'if .http_response_code==400 then .http_response else "skippy" end '| grep -v skippy | wc -l)" (400 User Error) response records for C2938661904-NSIDC_CPRD"
-echo "Located"$(cat "$C2938661904_nsidc_cprd_records_file" | jq 'if .http_response_code==404 then .http_response else "skippy" end '| grep -v skippy | wc -l)" (404 Not Found) response records for C2938661904-NSIDC_CPRD"
-echo "Located"$(cat "$C2938661904_nsidc_cprd_records_file" | jq 'if .http_response_code==500 then .http_response else "skippy" end '| grep -v skippy | wc -l)" (500 Server Error) response records for C2938661904-NSIDC_CPRD"
-echo "Located"$(cat "$C2938661904_nsidc_cprd_records_file" | jq 'if .http_response_code==502 then .http_response else "skippy" end '| grep -v skippy | wc -l)" (502 Bad Gateway) response records for C2938661904-NSIDC_CPRD"
-
-
 # Get the all response records from POCLOUD (18644 records total)
 export pocloud_records_file="./pocloud_records"
 cat "$combined_log_file" | jq 'to_entries[] | .value | if .collectionId!=null and (.collectionId | contains("POCLOUD")) then . else "skippy"  end' | grep -v skippy | jq '.' > "$pocloud_records_file"

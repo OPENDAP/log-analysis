@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-
 """
 Merge two JSON files that share a field named 'request_id' using that field's
 value as an index.

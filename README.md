@@ -1,15 +1,54 @@
 # Log Processing 
 
 ## What's here
-Python code to process raw BES logs that use the |&| separators.
+There are XYZ different kinds of Hyrax/AWS/NGAP log processing tool here.
 
-Now contains code to download Cloud Watch logs.
+There are files here to process the raw BES log (log_processing.py) and 
+to process various JSON-formatted logs from AWS CloudWatch (download_logs.py, 
+and others). There are also shell scripts that combine various python 
+programs and `jq` programs to extract information from the logs. Most of
+the scripts here work with data from AWS.
 
-log_processing.py: Turn bes logs into CSV, fix the times and split the log up by PID.
-download_logs.py: Download CloudWatch json for a given log group and date range.
-response_times.py: Take many 'timing.txt' files made by the hyrax500-2 client and build
+There are also some programs here that collate information from iterative 
+tests of Hyrax, especially the hyrax500 parallel access tool.
+
+**Raw BES Logs**
+* log_processing.py: Turn bes logs into CSV, fix the times and split the log up by PID.
+
+**Parallel access tools**
+* response_times2.py: Take many 'timing.txt' files made by the hyrax500-2 client and build
 		   a single csv file that's easy to graph.
-ngap-logs.py:
+
+**JSON** Python tools (mostly for AWS CloudWatch log data)
+* download_logs.py: Download CloudWatch json for a given log group and date range.
+* ngap-logs.py: Merge two or three AWS/CW logs using the Hyrax request ID
+* join_json_array.py: Join records in two documents, each of which is a JSON array.
+	This performs an outer-product 'join' using the Hyrax request ID
+* join_metrics_log_with_application_log.py: Join the OLFS request & response logs
+	with the BES log. This joins the JSON-formatted log data using dates and not
+	the request ID.
+* merge_request_response.py: This does the same operation as join_json_array.py
+	but with a bit less flexibility (the key name is fixed, etc.)
+* ngap-logs.py: This performs an outer-product join on the OLFS and BES JSON log
+	information. It can also be used to find all the entries for a specific 
+	Hyrax request ID.
+* reorder-records.py: Reorder the fields in JSON log records. There are four
+	'priority' fields that are always listed first, followed by all the others.
+
+**JSON** Shell tools
+* all_200_responses.sh, ...: Look for all the 200 responses and show how many there are.
+* combined_analysis.sh: Look at the combined JSON information. Prints out various things.
+* download_and_merge.sh: Get the three logs (two from OLFS and one from the BES) and 
+	merge them using the request_id.
+* logs_overview.sh: Look over the combined log (might also work with the response_log.json)
+	and report on the different kinds of responses.
+* merge_request_response.sh: Nifty `jq` command to merge the request and response JSON.
+
+## How to get access to the AWS/NGAP logs 
+Not surprisingly, you need credentials to download CloudWatch logs from AWS/NGAP.
+
+Get the user id and secret key for the NGAP (or AWS) account and set that up 
+using `aws credentials`. Then get the log stream name(s) and download them. 
 
 ## How to run the tests
 Like this 
@@ -18,7 +57,9 @@ python -m unittest discover -p "test*.py" tests
 ```
 
 ## Usage info
-Using jq on the JSON downloaded by download_logs.py:
+For the scripts, look at the **_What's here_** section.
+
+Using `jq` on the JSON downloaded by download_logs.py:
 
 Here are some sample uses:
 Get all the array elements where 'hyrax-type' is "start-up". Stamp and repeat for "error", "info" and "request"

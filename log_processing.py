@@ -8,13 +8,12 @@ import os
 from datetime import datetime
 from collections import defaultdict
 
-
 verbose = False
 
 
 def split_csv_by_pid(input_file, field=2):
     """
-    Spint the given CSV file into N files, one for each of the N PIDs in field 3
+    Split the given CSV file into N files, one for each of the N PIDs in field 3
     of the CSV input file.
     :param input_file: CSV file of BES log data
     :param field: zero-based index of the field that holds the PID (this changed
@@ -105,10 +104,16 @@ def transform_logs_to_csv(input_file, output_file):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Process raw BES log files, turning them into CSV files.")
+    parser = argparse.ArgumentParser(description="Process raw BES log files, turning them into CSV files."
+                                                 " The intent is to not only transform them to CSV, but to"
+                                                 " also split them into N files, one for each PID. This will"
+                                                 " enable tracing what happens to each process during its"
+                                                 " lifetime. This command can be called on a raw log or "
+                                                 " a log that has already been reformatted as CSV but not"
+                                                 " yet split up by PID." )
 
-    parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
-    parser.add_argument("-s", "--split", help="split the csv file into N files, one for each PID",
+    parser.add_argument("-v", "--verbose", help="Increase output verbosity", action="store_true")
+    parser.add_argument("-s", "--split", help="Split the csv file into N files, one for each PID",
                         action="store_true")
 
     parser.add_argument("-i", "--input", help="The log file (raw or CSV) to process.", required=True)
