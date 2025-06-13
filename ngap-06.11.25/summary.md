@@ -8,7 +8,7 @@ We also the Total Response times to service a request drop significantly over th
 And during this period there was no signifcant increase in request traffic to the Hyrax deployment.
 ![Hyrax Request Counts - 06/11/25](./images/RequestCounts.png "Hyrax Request Counts - 06/11/25")
 
-So we has a look into our logs. In order to make the analysis a managable size, we 
+So we had a look into our logs. In order to make the analysis a managable size, we 
 collected logs for a ten minute period beginning on 2025-06-11T10:00:01+0000
 The file `logs.tgz` contains the base log files:
 * __request\_log.json__ - OLFS generated information via CloudWatch hyrax\_request\_log)
