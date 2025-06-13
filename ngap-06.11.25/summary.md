@@ -1,46 +1,44 @@
-10471 merged records.
+= Overview
 
-3160 404 responses
+In these logs there are:
+* 10471 merged records.
+* 3160 404 responses
+* 3669 500 responses
+* 41 request_log entries with no matching response log entries. (Http response code is unknown)
+* 22 of the unmatched request_log records have bes log entries.
 
-3669 500 responses
+There are 2320 entries with complete request and response logs, but missing BES entries.
+Of those:
+* 789 http 200 OK
+* 820 http 500 Internal Server Error
+* 711 http 404 Not Found
 
-41 request_log entries with no matching response log entries. (Http response code is unknown)
-
-22 of the unmatched request_log records have bes log entries.
-
-2320 entries with complete request and response logs, but missing BES entries.
-Of these:
-    789 http 200 OK
-    820 http 500 Internal Server Error
-    711 http 404 Not Found
-
-In order to locate the complete record in the combined file I used the follow jq expression:
+In order to locate all of the complete records in the combined file I used the follow `jq` expression:
 ```
    cat hyrax_combined_logs.json | jq '.[] | select(.ERROR==null and .bes != [])' > complete_records.json 
 ```
-The ERROR property is set when the  response_log does not contain a matching record for the request_log.
-And sometimes, the bes array is empty. 
+* `.ERROR==null` The ERROR property is only set when the `response_log` does not contain a record that matches one found in the `request_log`.
+* `.bes != []` Sometimes, the bes array is empty. 
 
-There are 8110 complete records.
+There are 8110 complete records in this log sample.
 ```
 cat complete_records.json | jq '.user_id' | wc
     8110    8110   97155
 ```
 
-
-2449 HTTP 200 OK responses
+* 2449 HTTP 200 OK responses
 ```
 cat complete_records.json | jq '.http_response_code' | grep 200 | wc
     2812    2812   11248
 ```
 
-2449 HTTP 404 Not Found responses
+* 2449 HTTP 404 Not Found responses
 ```
 cat complete_records.json | jq '.http_response_code' | grep 404 | wc
     2449    2449    9796
 ```
 
-2449 HTTP 500 Internal Server Error responses
+* 2449 HTTP 500 Internal Server Error responses
 ```    
 cat complete_records.json | jq '.http_response_code' | grep 500 | wc
     2849    2849   11396
@@ -50,7 +48,8 @@ cat complete_records.json | jq '.http_response_code' | grep 500 | wc
 ```
 cat complete_records.json | jq 'select(.http_response_code == 404)' > complete_404.json
 ```
-2449 Records
+
+There are 2449 records.
 ```
 cat complete_404.json | jq '.user_id' | wc
     2449    2449   29318
@@ -67,7 +66,8 @@ And those spawned an additional 993 "failed attempt 2, will retry" messages for 
 cat complete_404.json | grep "attempt: 2" | grep "cmr.earthdata" | wc
      993   17874  377252
 ```
-Of the 9 non CMR 404s
+
+Punting on the 9 non CMR 404s for now...
 
 
 ## HTTP 404 500 Internal Server Error
