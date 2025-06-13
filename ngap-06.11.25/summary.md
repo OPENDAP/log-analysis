@@ -38,7 +38,7 @@ cat complete_records.json | jq '.http_response_code' | grep 404 | wc
     2449    2449    9796
 ```
 
-* 2449 HTTP 500 Internal Server Error responses
+* 2849 HTTP 500 Internal Server Error responses
 ```    
 cat complete_records.json | jq '.http_response_code' | grep 500 | wc
     2849    2849   11396
@@ -75,7 +75,7 @@ Punting on the 9 non CMR 404s for now...
 ```
 cat complete_records.json | jq 'select(.http_response_code == 500)' > complete_500.json
 ```
-2849 Records
+There are 2849 Records
 ```
 cat complete_500.json | jq '.user_id' | wc
     2849    2849   34111
