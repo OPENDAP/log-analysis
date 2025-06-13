@@ -1,6 +1,15 @@
 # Overview
+On 06/11/2025 we saw significant increase in HTTP 5xx errors being returned from Hyrax in Prod
+![Hyrax 5XX Errors - 06/11/25](./images/Target5xxErrors.png "Hyrax 5XX Errors - 06/11/25")
 
-Logs collected for a ten minute period beginning on 2025-06-11T10:00:01+0000
+We also the Total Response times to service a request drop significantly over the same period
+![Hyrax Total Response Time - 06/11/25](./images/TotalResponseTime.png "Total Response Time - 06/11/25")
+
+And during this period there was no signifcant increase in request traffic to the Hyrax deployment.
+![Hyrax Request Counts - 06/11/25](./images/RequestCounts.png "Hyrax Request Counts - 06/11/25")
+
+So we has a look into our logs. In order to make the analysis a managable size, we 
+collected logs for a ten minute period beginning on 2025-06-11T10:00:01+0000
 The file `logs.tgz` contains the base log files:
 * __request\_log.json__ - OLFS generated information via CloudWatch hyrax\_request\_log)
 * __response\_log.json__ - OLFS generated information via CloudWatch hyrax\_response\_log)
