@@ -1,0 +1,11 @@
+# From the tar ball
+
+bes_log.json
+hyrax_combined_logs.json
+request_log.json
+response_log.json
+
+# Created in the narative in summary.md
+complete_records.json
+complete_404.json
+complete_500.json
