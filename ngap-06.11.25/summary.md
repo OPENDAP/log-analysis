@@ -84,7 +84,7 @@ cat complete_404.json | grep "attempt: 2" | grep "cmr.earthdata" | wc
 Punting on the 9 non CMR 404s for now...
 
 
-### HTTP 404 500 Internal Server Error
+### HTTP 500 Internal Server Error
 
 ```
 cat complete_records.json | jq 'select(.http_response_code == 500)' > complete_500.json
