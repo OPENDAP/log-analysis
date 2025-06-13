@@ -80,6 +80,25 @@ And those spawned an additional 993 "failed attempt 2, will retry" messages for 
 cat complete_404.json | grep "attempt: 2" | grep "cmr.earthdata" | wc
      993   17874  377252
 ```
+#### Service Chain Urls that returne 404 Not Found 
+To locate these URLs I used:
+```
+cat complete_404.json  | grep CURLINFO_EFFECTIVE_URL | awk '{print $11}' | sort -u
+```
+Which returned:
+```
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C1276812830-GES_DISC
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C1276812900-GES_DISC
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C1276812901-GES_DISC
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2036877612-POCLOUD
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2075141605-POCLOUD
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2075141684-POCLOUD
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2596864127-NSIDC_CPRD
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2613553216-NSIDC_CPRD
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2613553260-NSIDC_CPRD
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2670138092-NSIDC_CPRD
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2684928243-NSIDC_CPRD
+```
 
 Punting on the 9 non CMR 404s for now...
 
@@ -113,3 +132,28 @@ cat complete_500.json | grep "Returned HTTP_STATUS: 500"  | grep "cmr.earthdata"
     8547  247863 3971051
 ```
 Note that's `8547 = 2849 * 3`, one for each failed attempt.
+
+#### Service Chain Urls that returne 500 Internal Server Error 
+To locate these URLs I used:
+```
+cat complete_500.json  | grep CURLINFO_EFFECTIVE_URL | awk '{print $11}' | sort -u
+```
+
+Which returned:
+```
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C1276812830-GES_DISC
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C1276812900-GES_DISC
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C1276812901-GES_DISC
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2036877612-POCLOUD
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2075141605-POCLOUD
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2075141684-POCLOUD
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2491756421-POCLOUD
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2596864127-NSIDC_CPRD
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2613553216-NSIDC_CPRD
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2613553243-NSIDC_CPRD
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2613553260-NSIDC_CPRD
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2670138092-NSIDC_CPRD
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2684928243-NSIDC_CPRD
+https://cmr.earthdata.nasa.gov/search/granules.umm_json_v1_4?collection_concept_id=C2713030505-NSIDC_CPRD
+```
+
