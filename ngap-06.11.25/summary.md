@@ -89,7 +89,7 @@ And those spawned an additional 993 "failed attempt 2, will retry" messages for 
 cat complete_404.json | grep "attempt: 2" | grep "cmr.earthdata" | wc
      993   17874  377252
 ```
-#### Service Chain Urls that returne 404 Not Found 
+#### Service Chain Urls that returned HTTP 404 Not Found 
 To locate these URLs I used:
 ```
 cat complete_404.json  | grep CURLINFO_EFFECTIVE_URL | awk '{print $11}' | sort -u
@@ -142,7 +142,7 @@ cat complete_500.json | grep "Returned HTTP_STATUS: 500"  | grep "cmr.earthdata"
 ```
 Note that's `8547 = 2849 * 3`, one for each failed attempt.
 
-#### Service Chain Urls that returne 500 Internal Server Error 
+#### Service Chain Urls that returned HTTP 500 Internal Server Error 
 To locate these URLs I used:
 ```
 cat complete_500.json  | grep CURLINFO_EFFECTIVE_URL | awk '{print $11}' | sort -u
