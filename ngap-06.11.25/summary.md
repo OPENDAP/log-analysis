@@ -1,8 +1,8 @@
 # Overview
-On 06/11/2025 we saw significant increase in HTTP 5xx errors being returned from Hyrax in Prod
+On 06/11/2025 we saw a significant increase in HTTP 5xx errors being returned from Hyrax in Prod
 ![Hyrax 5XX Errors - 06/11/25](./images/Target5xxErrors.png "Hyrax 5XX Errors - 06/11/25")
 
-We also the Total Response times to service a request drop significantly over the same period
+We also saw the Total Response times from the Hyrax service request drop significantly over the same period
 ![Hyrax Total Response Time - 06/11/25](./images/TotalResponseTime.png "Total Response Time - 06/11/25")
 
 And during this period there was no signifcant increase in request traffic to the Hyrax deployment.
