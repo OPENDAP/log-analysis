@@ -115,8 +115,8 @@ function analyze_logs(; log_path, title_prefix="", verbose=false)
         str == "Get granule record from CMR" && (return "1. " * str)
         str == "Get DMRpp from DAAC bucket" && (return "2. Get DMR++ from S3")
         str == "Get signed url from TEA" && (return "3. " * str)
-        str == "Get SuperChunk data" && (return "4. " * str)
-        str == "Process SuperChunk data" && (return "5. " * str)
+        startswith(str, "Get SuperChunk data") && (return "4. Get SuperChunk data")
+        startswith(str, "Process SuperChunk data") && (return "5. Process SuperChunk data")
         @warn "Unexpected action type: `$str`"
         return str
     end
@@ -131,16 +131,21 @@ function analyze_logs(; log_path, title_prefix="", verbose=false)
     display(reverse(gdf))
 
     @info "Generating summary plots..."
-    df_sans_superchunks = select(profile_logs, :action => :source,
-                                 :elapsed_us => ByRow(v -> v / 1_000_000) => :values)
-    plot_profile_rainclouds(df_sans_superchunks; title=title_prefix * "profiling",
+    df_actions = select(profile_logs, :action => :source,
+                        :elapsed_us => ByRow(v -> v / 1_000_000) => :values)
+    plot_profile_rainclouds(df_actions; title=title_prefix * "profiling",
                             savepath=plot_prefix * "_profile_raincloud.png",
                             xlims=(nothing, nothing))
-    plot_profile_rainclouds(df_sans_superchunks; title=title_prefix * "profiling (zoomed)",
-                            savepath=plot_prefix * "_profile_raincloud_zoomed.png",
-                            xlims=(0, 2.5))
 
-    return logs
+    max_duration_zoom = min(Int(ceil(maximum(df_actions.values))), 20)
+    for s in 2:2:max_duration_zoom
+        plot_profile_rainclouds(df_actions; title=title_prefix * "profiling (zoomed)",
+                                savepath=plot_prefix *
+                                         "_profile_raincloud_zoomed_max$(s)sec.png",
+                                xlims=(0, s))
+    end
+
+    return (; logs, df_actions)
 end
 
 # CLI entrypoint
