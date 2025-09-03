@@ -35,6 +35,9 @@ tests of Hyrax, especially the hyrax500 parallel access tool.
 * reorder-records.py: Reorder the fields in JSON log records. There are four
 	'priority' fields that are always listed first, followed by all the others.
 
+**JSON** Julia tools (mostly for AWS CloudWatch log data)
+* hyrax_service_chain_profiling/README.md: Analyze CloudWatch service chain profiling logs.
+
 **JSON** Shell tools
 * all_200_responses.sh, ...: Look for all the 200 responses and show how many there are.
 * combined_analysis.sh: Look at the combined JSON information. Prints out various things.
