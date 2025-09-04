@@ -5,26 +5,35 @@ using DataFrames
 using JSON3
 using Statistics
 using CairoMakie
+using Dates
 
 #####
 ##### Helper function
 #####
 
-function plot_profile_rainclouds(df; xlims=(nothing, nothing), title, savepath)
+function plot_profile_rainclouds(df; xlims=(nothing, nothing), title, savepath, metadata="")
+    set_theme!(Theme(; fontsize=16))
+
     category_labels = df.source
     labels = unique!(select(df, :source)).source
     colors = Makie.wong_colors()
     axis = (; xlabel="Duration [seconds]", title,
+            xminorgridvisible=true,
+            xminorgridcolor=RGBAf(0, 0, 0, 0.1),
+            xgridcolor=RGBAf(0, 0, 0, 0.15),
+            xminorticks=1:1000,
             yticks=(1:length(labels), labels),)
     p = rainclouds(category_labels, df.values;
                    axis,
-                   figure=(size=(800, 400),),
+                   figure=(size=(1200, 600),),
                    cloud_width=0.5,
                    clouds=hist,
                    orientation=:horizontal,
                    hist_bins=2000,
-                   color=colors[indexin(category_labels, unique(category_labels))])
+                   color=colors[indexin(category_labels, unique(category_labels))],)
     xlims!(xlims...)
+    text!(p.figure.scene, Point3f(0, 0, 0); text=metadata, space=:relative)
+
     save(savepath, p)
     println("\t- Plot saved to $savepath")
     return nothing
@@ -42,11 +51,15 @@ function print_log_examples(logs)
     end
 end
 
+function get_date_range_str(profiling_logs)
+    return join(unix2datetime.(extrema(profiling_logs.time)), " to ")
+end
+
 #####
 ##### Main entrypoint
 #####
 
-function analyze_logs(; log_path, title_prefix="", verbose=false)
+function analyze_logs(; log_path, title_prefix="", verbose=false, max_zoom_x=20)
     isfile(log_path) || throw("Input log file not found: `$(log_path)`")
 
     @info "Loading data from $log_path..."
@@ -112,18 +125,23 @@ function analyze_logs(; log_path, title_prefix="", verbose=false)
     transform!(profile_logs,
                :action => ByRow(a -> replace(a, "Request redirect url" => "Get signed url from TEA", "Request" => "Get", "Handle" => "Process", " unconstrained" => "")) => :action)
     _add_num_prefix = str -> begin
-        str == "Get granule record from CMR" && (return "1. " * str)
-        str == "Get DMRpp from DAAC bucket" && (return "2. Get DMR++ from S3")
+        str == "Get granule record from CMR" &&
+            (return "1. " * str * "\n(Includes retries on failure)")
+        str == "Get DMRpp from DAAC bucket" &&
+            (return "2. Get DMR++ from S3\n(Includes TEA redirect)")
         str == "Get signed url from TEA" && (return "3. " * str)
-        startswith(str, "Get SuperChunk data") && (return "4. Get SuperChunk data")
-        startswith(str, "Process SuperChunk data") && (return "5. Process SuperChunk data")
+        startswith(str, "Get SuperChunk data") && (return "4. Get SuperChunk data from S3")
+        startswith(str, "Process SuperChunk data") &&
+            (return "5. Process SuperChunk\n(In memory)")
         @warn "Unexpected action type: `$str`"
         return str
     end
     transform!(profile_logs, :action => ByRow(_add_num_prefix) => :action)
     reverse!(sort!(profile_logs, :action))
 
-    @info "Profile logs summary:" num_unique_requests = length(unique(profile_logs.request_id)) total_log_lines = nrow(profile_logs)
+    date_range = get_date_range_str(profile_logs)
+
+    @info "Profile logs summary:" date_range num_unique_requests = length(unique(profile_logs.request_id)) total_log_lines = nrow(profile_logs)
 
     gdf = combine(groupby(profile_logs, :action), nrow => "log count",
                   :elapsed_us => (arr -> median(arr) / 1_000_000) => "median duration [s]",
@@ -133,16 +151,18 @@ function analyze_logs(; log_path, title_prefix="", verbose=false)
     @info "Generating summary plots..."
     df_actions = select(profile_logs, :action => :source,
                         :elapsed_us => ByRow(v -> v / 1_000_000) => :values)
-    plot_profile_rainclouds(df_actions; title=title_prefix * "profiling",
+    plot_profile_rainclouds(df_actions; title=title_prefix * "service chain profiling",
                             savepath=plot_prefix * "_profile_raincloud.png",
-                            xlims=(nothing, nothing))
+                            xlims=(nothing, nothing), metadata=date_range)
 
-    max_duration_zoom = min(Int(ceil(maximum(df_actions.values))), 20)
+    max_duration_zoom = min(Int(ceil(maximum(df_actions.values))), max_zoom_x)
     for s in 2:2:max_duration_zoom
-        plot_profile_rainclouds(df_actions; title=title_prefix * "profiling (zoomed)",
+        plot_profile_rainclouds(df_actions;
+                                title=title_prefix * "service chain profiling (zoomed)",
                                 savepath=plot_prefix *
                                          "_profile_raincloud_zoomed_max$(s)sec.png",
-                                xlims=(0, s))
+                                xlims=(-.2, s),
+                                metadata=date_range)
     end
 
     return (; logs, df_actions)
