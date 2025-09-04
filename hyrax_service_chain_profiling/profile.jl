@@ -45,7 +45,7 @@ function main(; force_new_credentials::Bool=false, use_all_defaults::Bool=false)
     validate_or_prompt_aws_credentials(; force_new_credentials)
 
     # Get user inputs for log filter request
-    time_now = Dates.now()
+    time_now = Dates.now(UTC)
     start_time = let
         default = string(time_now - Dates.Hour(1))
         t = use_all_defaults ? default :
