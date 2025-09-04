@@ -12,7 +12,7 @@ using Dates
 #####
 
 function plot_profile_rainclouds(df; xlims=(nothing, nothing), title, savepath, metadata="")
-    set_theme!(Theme(; fontsize=10))
+    set_theme!(Theme(; fontsize=16))
 
     category_labels = df.source
     labels = unique!(select(df, :source)).source
@@ -25,7 +25,7 @@ function plot_profile_rainclouds(df; xlims=(nothing, nothing), title, savepath, 
             yticks=(1:length(labels), labels),)
     p = rainclouds(category_labels, df.values;
                    axis,
-                   figure=(size=(800, 400),),
+                   figure=(size=(1200, 600),),
                    cloud_width=0.5,
                    clouds=hist,
                    orientation=:horizontal,
@@ -126,13 +126,13 @@ function analyze_logs(; log_path, title_prefix="", verbose=false, max_zoom_x=20)
                :action => ByRow(a -> replace(a, "Request redirect url" => "Get signed url from TEA", "Request" => "Get", "Handle" => "Process", " unconstrained" => "")) => :action)
     _add_num_prefix = str -> begin
         str == "Get granule record from CMR" &&
-            (return "1. " * str * "*\n*Includes retries on failure")
+            (return "1. " * str * "\n(Includes retries on failure)")
         str == "Get DMRpp from DAAC bucket" &&
-            (return "2. Get DMR++ from S3*\n*Includes TEA redirect")
+            (return "2. Get DMR++ from S3\n(Includes TEA redirect)")
         str == "Get signed url from TEA" && (return "3. " * str)
         startswith(str, "Get SuperChunk data") && (return "4. Get SuperChunk data from S3")
         startswith(str, "Process SuperChunk data") &&
-            (return "5. Process SuperChunk\n(in memory)")
+            (return "5. Process SuperChunk\n(In memory)")
         @warn "Unexpected action type: `$str`"
         return str
     end
@@ -161,7 +161,7 @@ function analyze_logs(; log_path, title_prefix="", verbose=false, max_zoom_x=20)
                                 title=title_prefix * "service chain profiling (zoomed)",
                                 savepath=plot_prefix *
                                          "_profile_raincloud_zoomed_max$(s)sec.png",
-                                xlims=(0, s),
+                                xlims=(-.2, s),
                                 metadata=date_range)
     end
 
