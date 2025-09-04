@@ -24,7 +24,7 @@ function plot_profile_rainclouds(df; xlims=(nothing, nothing), title, savepath, 
                    clouds=hist,
                    orientation=:horizontal,
                    hist_bins=2000,
-                   color=colors[indexin(category_labels, unique(category_labels))])
+                   color=colors[indexin(category_labels, unique(category_labels))],)
     xlims!(xlims...)
     text!(p.figure.scene, Point3f(0, 0, 0); text=metadata, space=:relative)
     save(savepath, p)
@@ -52,7 +52,7 @@ end
 ##### Main entrypoint
 #####
 
-function analyze_logs(; log_path, title_prefix="", verbose=false)
+function analyze_logs(; log_path, title_prefix="", verbose=false, max_zoom_x=0)
     isfile(log_path) || throw("Input log file not found: `$(log_path)`")
 
     @info "Loading data from $log_path..."
@@ -119,10 +119,10 @@ function analyze_logs(; log_path, title_prefix="", verbose=false)
                :action => ByRow(a -> replace(a, "Request redirect url" => "Get signed url from TEA", "Request" => "Get", "Handle" => "Process", " unconstrained" => "")) => :action)
     _add_num_prefix = str -> begin
         str == "Get granule record from CMR" && (return "1. " * str)
-        str == "Get DMRpp from DAAC bucket" && (return "2. Get DMR++ from S3")
+        str == "Get DMRpp from DAAC bucket" && (return "2. Get DMR++ from S3*\n*Includes implicit TEA redirect")
         str == "Get signed url from TEA" && (return "3. " * str)
-        startswith(str, "Get SuperChunk data") && (return "4. Get SuperChunk data")
-        startswith(str, "Process SuperChunk data") && (return "5. Process SuperChunk data")
+        startswith(str, "Get SuperChunk data") && (return "4. Get SuperChunk data from S3")
+        startswith(str, "Process SuperChunk data") && (return "5. Process SuperChunk\nin memory")
         @warn "Unexpected action type: `$str`"
         return str
     end
@@ -145,7 +145,7 @@ function analyze_logs(; log_path, title_prefix="", verbose=false)
                             savepath=plot_prefix * "_profile_raincloud.png",
                             xlims=(nothing, nothing), metadata=date_range)
 
-    max_duration_zoom = min(Int(ceil(maximum(df_actions.values))), 20)
+    max_duration_zoom = min(Int(ceil(maximum(df_actions.values))), max_zoom_x)
     for s in 2:2:max_duration_zoom
         plot_profile_rainclouds(df_actions;
                                 title=title_prefix * "service chain profiling (zoomed)",
