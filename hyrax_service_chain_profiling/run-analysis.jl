@@ -35,7 +35,7 @@ function plot_profile_rainclouds(df; xlims=(nothing, nothing), title, savepath, 
     text!(p.figure.scene, Point3f(0, 0, 0); text=metadata, space=:relative)
 
     save(savepath, p)
-    println("\t- Plot saved to $savepath")
+    println("\t- Plot saved to $(basename(savepath))")
     return nothing
 end
 
@@ -62,7 +62,7 @@ end
 function analyze_logs(; log_path, title_prefix="", verbose=false, max_zoom_x=20)
     isfile(log_path) || throw("Input log file not found: `$(log_path)`")
 
-    @info "Loading data from $log_path..."
+    @info "Loading log data..."
     plot_prefix = replace(log_path, ".json" => "")
     json = JSON3.read(log_path)
     logs = Dict()
@@ -83,7 +83,6 @@ function analyze_logs(; log_path, title_prefix="", verbose=false, max_zoom_x=20)
         rename!(s -> replace(s, "hyrax-" => "", "-" => "_"), logs[k])
     end
 
-    @info "Processing profiling logs..."
     if "timing" in keys(logs)
         df_profiling = filter("timer_name" => startswith("Profile timing"), logs["timing"])
         logs["timing"] = filter("timer_name" => !startswith("Profile timing"),
@@ -105,10 +104,14 @@ function analyze_logs(; log_path, title_prefix="", verbose=false, max_zoom_x=20)
     end
 
     @info "Number of log lines per type:"
+    total = 0
     for k in keys(logs)
         str = lpad(k * ": ", 14)
-        println("\t$str$(nrow(logs[k]))")
+        num = nrow(logs[k])
+        println("\t$str$(num)")
+        total += num
     end
+    println("\t\tTotal: $total")
 
     verbose && print_log_examples(logs)
 
@@ -118,7 +121,8 @@ function analyze_logs(; log_path, title_prefix="", verbose=false, max_zoom_x=20)
         k == "error" && continue
         append!(request_ids, unique(logs[k].request_id))
     end
-    @info "Total number of request ids: $(length(unique(request_ids)))"
+    @info "Total unique request ids: $(length(unique(request_ids)))"
+    @info "Total unique request ids in profiling logs: $(length(unique(request_ids)))"
 
     # Let's do some exploring!
     profile_logs = logs["profiling"]
@@ -141,14 +145,16 @@ function analyze_logs(; log_path, title_prefix="", verbose=false, max_zoom_x=20)
 
     date_range = get_date_range_str(profile_logs)
 
-    @info "Profile logs summary:" date_range num_unique_requests = length(unique(profile_logs.request_id)) total_log_lines = nrow(profile_logs)
+    @info "Total unique request ids in profiling logs: $(length(unique(profile_logs.request_id)))"
+    @info "Profile logs summary:" date_range total_log_lines = nrow(profile_logs)
 
+    println()
     gdf = combine(groupby(profile_logs, :action), nrow => "log count",
                   :elapsed_us => (arr -> median(arr) / 1_000_000) => "median duration [s]",
                   :elapsed_us => (arr -> maximum(arr) / 1_000_000) => "max duration [s]")
     display(reverse(gdf))
 
-    @info "Generating summary plots..."
+    @info "Generating summary plots in $(dirname(plot_prefix))..."
     df_actions = select(profile_logs, :action => :source,
                         :elapsed_us => ByRow(v -> v / 1_000_000) => :values)
     plot_profile_rainclouds(df_actions; title=title_prefix * "service chain profiling",

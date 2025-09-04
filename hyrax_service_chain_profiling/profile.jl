@@ -1,6 +1,6 @@
 using Dates
 
-include(joinpath(@__DIR__, "run-analysis.jl")) #TODO-H: turn run-analysis into a package
+include(joinpath(@__DIR__, "run-analysis.jl"))
 
 #####
 ##### Helper function
@@ -39,46 +39,47 @@ datetime2epoch_ms(x::DateTime) = (Dates.value(x) - Dates.UNIXEPOCH)
 ##### Main entrypoint
 #####
 
-# TODO: support enormous logs....might not be grabbing all due to download size restrictions?!?
+# TODO-future: support enormous logs....might not be grabbing all due to download size restrictions?!?
 function main(; force_new_credentials::Bool=false, use_all_defaults::Bool=false)
     # Prompt for credentials 
     validate_or_prompt_aws_credentials(; force_new_credentials)
 
-    # Set up log filter
-    now = Dates.now()
+    # Get user inputs for log filter request
+    time_now = Dates.now()
     start_time = let
-        default = string(now - Dates.Hour(1))
+        default = string(time_now - Dates.Hour(1))
         t = use_all_defaults ? default :
             Base.prompt("Start time? (Default is an hour ago)"; default)
         datetime2epoch_ms(DateTime(t))
     end
     end_time = let
-        default = string(now)
+        default = string(time_now)
         t = use_all_defaults ? default : Base.prompt("End time? (Default is now)"; default)
         datetime2epoch_ms(DateTime(t))
     end
-
     log_group_name = let
         default = "hyrax-prod"
         use_all_defaults ? default : Base.prompt("Log group name?"; default)
     end
-
-    # Get logs 
     outdir = let
         default = joinpath(homedir(), "Downloads")
         use_all_defaults ? default : Base.prompt("Output directory?"; default)
     end
-    log_path = joinpath(outdir, string(Dates.today()),
-                        "logs_$(start_time)-$(end_time)_$(log_group_name).json") #TODO prompt output dir
-    mkpath(dirname(log_path))
-
-    @info "Downloading logs to $log_path..."
+    date_str = "$start_time-$end_time"
+    log_path = joinpath(outdir, string(Date(time_now)) * "_$(date_str)",
+                        "logs-$(date_str)-$(log_group_name).json")
+    
     aws_cmd = `aws logs filter-log-events --log-group-name $log_group_name --start-time $start_time --end-time $end_time --output json`
-    logs = read(aws_cmd, String)
-    write(log_path, logs)
+    @info "AWS request:" start_time end_time log_group_name log_path command=aws_cmd
 
-    # Generate results 
-    title_prefix = uppercase(first(split(log_group_name, "hyrax-"; limit=1)))
+    @info "Downloading logs..."
+    logs = read(aws_cmd, String)
+    mkpath(dirname(log_path))
+    write(log_path, logs)
+    @info "Logs saved to $log_path"
+
+    # Generate results  
+    title_prefix = uppercase(first(split(log_group_name, "hyrax-"; limit=2))) * " "
     results = analyze_logs(; log_path, title_prefix)
 
     return results

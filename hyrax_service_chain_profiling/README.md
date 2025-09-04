@@ -86,5 +86,3 @@ will generate plots
 - `~Downloads/logs_2025-08-29_hyrax-foo_profile_raincloud_zoomed.png`
 
 and the title on each plot will be prefixed with "FOO ". 
-
-
