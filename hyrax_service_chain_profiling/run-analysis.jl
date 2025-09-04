@@ -122,7 +122,6 @@ function analyze_logs(; log_path, title_prefix="", verbose=false, max_zoom_x=20)
         append!(request_ids, unique(logs[k].request_id))
     end
     @info "Total unique request ids: $(length(unique(request_ids)))"
-    @info "Total unique request ids in profiling logs: $(length(unique(request_ids)))"
 
     # Let's do some exploring!
     profile_logs = logs["profiling"]
