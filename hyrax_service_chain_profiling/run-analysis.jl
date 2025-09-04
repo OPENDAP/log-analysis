@@ -12,10 +12,16 @@ using Dates
 #####
 
 function plot_profile_rainclouds(df; xlims=(nothing, nothing), title, savepath, metadata="")
+    set_theme!(Theme(; fontsize=10))
+
     category_labels = df.source
     labels = unique!(select(df, :source)).source
     colors = Makie.wong_colors()
     axis = (; xlabel="Duration [seconds]", title,
+            xminorgridvisible=true,
+            xminorgridcolor=RGBAf(0, 0, 0, 0.1),
+            xgridcolor=RGBAf(0, 0, 0, 0.15),
+            xminorticks=1:1000,
             yticks=(1:length(labels), labels),)
     p = rainclouds(category_labels, df.values;
                    axis,
@@ -27,6 +33,7 @@ function plot_profile_rainclouds(df; xlims=(nothing, nothing), title, savepath, 
                    color=colors[indexin(category_labels, unique(category_labels))],)
     xlims!(xlims...)
     text!(p.figure.scene, Point3f(0, 0, 0); text=metadata, space=:relative)
+
     save(savepath, p)
     println("\t- Plot saved to $savepath")
     return nothing
@@ -52,7 +59,7 @@ end
 ##### Main entrypoint
 #####
 
-function analyze_logs(; log_path, title_prefix="", verbose=false, max_zoom_x=0)
+function analyze_logs(; log_path, title_prefix="", verbose=false, max_zoom_x=20)
     isfile(log_path) || throw("Input log file not found: `$(log_path)`")
 
     @info "Loading data from $log_path..."
@@ -118,11 +125,14 @@ function analyze_logs(; log_path, title_prefix="", verbose=false, max_zoom_x=0)
     transform!(profile_logs,
                :action => ByRow(a -> replace(a, "Request redirect url" => "Get signed url from TEA", "Request" => "Get", "Handle" => "Process", " unconstrained" => "")) => :action)
     _add_num_prefix = str -> begin
-        str == "Get granule record from CMR" && (return "1. " * str)
-        str == "Get DMRpp from DAAC bucket" && (return "2. Get DMR++ from S3*\n*Includes implicit TEA redirect")
+        str == "Get granule record from CMR" &&
+            (return "1. " * str * "*\n*Includes retries on failure")
+        str == "Get DMRpp from DAAC bucket" &&
+            (return "2. Get DMR++ from S3*\n*Includes TEA redirect")
         str == "Get signed url from TEA" && (return "3. " * str)
         startswith(str, "Get SuperChunk data") && (return "4. Get SuperChunk data from S3")
-        startswith(str, "Process SuperChunk data") && (return "5. Process SuperChunk\nin memory")
+        startswith(str, "Process SuperChunk data") &&
+            (return "5. Process SuperChunk\n(in memory)")
         @warn "Unexpected action type: `$str`"
         return str
     end
