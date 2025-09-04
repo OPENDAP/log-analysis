@@ -5,12 +5,13 @@ using DataFrames
 using JSON3
 using Statistics
 using CairoMakie
+using Dates
 
 #####
 ##### Helper function
 #####
 
-function plot_profile_rainclouds(df; xlims=(nothing, nothing), title, savepath)
+function plot_profile_rainclouds(df; xlims=(nothing, nothing), title, savepath, metadata="")
     category_labels = df.source
     labels = unique!(select(df, :source)).source
     colors = Makie.wong_colors()
@@ -25,6 +26,7 @@ function plot_profile_rainclouds(df; xlims=(nothing, nothing), title, savepath)
                    hist_bins=2000,
                    color=colors[indexin(category_labels, unique(category_labels))])
     xlims!(xlims...)
+    text!(p.figure.scene, Point3f(0, 0, 0); text=metadata, space=:relative)
     save(savepath, p)
     println("\t- Plot saved to $savepath")
     return nothing
@@ -40,6 +42,10 @@ function print_log_examples(logs)
         end
         println()
     end
+end
+
+function get_date_range_str(profiling_logs)
+    return join(unix2datetime.(extrema(profiling_logs.time)), " to ")
 end
 
 #####
@@ -123,7 +129,9 @@ function analyze_logs(; log_path, title_prefix="", verbose=false)
     transform!(profile_logs, :action => ByRow(_add_num_prefix) => :action)
     reverse!(sort!(profile_logs, :action))
 
-    @info "Profile logs summary:" num_unique_requests = length(unique(profile_logs.request_id)) total_log_lines = nrow(profile_logs)
+    date_range = get_date_range_str(profile_logs)
+
+    @info "Profile logs summary:" date_range num_unique_requests = length(unique(profile_logs.request_id)) total_log_lines = nrow(profile_logs)
 
     gdf = combine(groupby(profile_logs, :action), nrow => "log count",
                   :elapsed_us => (arr -> median(arr) / 1_000_000) => "median duration [s]",
@@ -135,14 +143,16 @@ function analyze_logs(; log_path, title_prefix="", verbose=false)
                         :elapsed_us => ByRow(v -> v / 1_000_000) => :values)
     plot_profile_rainclouds(df_actions; title=title_prefix * "service chain profiling",
                             savepath=plot_prefix * "_profile_raincloud.png",
-                            xlims=(nothing, nothing))
+                            xlims=(nothing, nothing), metadata=date_range)
 
     max_duration_zoom = min(Int(ceil(maximum(df_actions.values))), 20)
     for s in 2:2:max_duration_zoom
-        plot_profile_rainclouds(df_actions; title=title_prefix * "service chain profiling (zoomed)",
+        plot_profile_rainclouds(df_actions;
+                                title=title_prefix * "service chain profiling (zoomed)",
                                 savepath=plot_prefix *
                                          "_profile_raincloud_zoomed_max$(s)sec.png",
-                                xlims=(0, s))
+                                xlims=(0, s),
+                                metadata=date_range)
     end
 
     return (; logs, df_actions)
