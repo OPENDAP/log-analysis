@@ -133,13 +133,13 @@ function analyze_logs(; log_path, title_prefix="", verbose=false)
     @info "Generating summary plots..."
     df_actions = select(profile_logs, :action => :source,
                         :elapsed_us => ByRow(v -> v / 1_000_000) => :values)
-    plot_profile_rainclouds(df_actions; title=title_prefix * "profiling",
+    plot_profile_rainclouds(df_actions; title=title_prefix * "service chain profiling",
                             savepath=plot_prefix * "_profile_raincloud.png",
                             xlims=(nothing, nothing))
 
     max_duration_zoom = min(Int(ceil(maximum(df_actions.values))), 20)
     for s in 2:2:max_duration_zoom
-        plot_profile_rainclouds(df_actions; title=title_prefix * "profiling (zoomed)",
+        plot_profile_rainclouds(df_actions; title=title_prefix * "service chain profiling (zoomed)",
                                 savepath=plot_prefix *
                                          "_profile_raincloud_zoomed_max$(s)sec.png",
                                 xlims=(0, s))
