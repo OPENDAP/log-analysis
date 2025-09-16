@@ -26,6 +26,11 @@ To force a credential update, e.g. in the case where you are switching between d
 julia path/to/profile.jl -F
 ```
 
+To run on a pre-downloaded folder containing multiple logs, do
+```bash
+julia path/to/profile.jl <path-to-folder>
+```
+
 ## Custom analysis
 
 ### 1. Collect log data to be analyzed
@@ -45,7 +50,7 @@ Raw `bes` logs will be found at path `~/hyrax/build/var/bes.log`, unless another
 
 #### CloudWatch logs
 
-To download the CloudWatch logs, after installing the AWS CLI, do
+To download the two required log groups of CloudWatch logs, after installing the AWS CLI, do
 
 ```bash
 aws configure  # will prompt for aws credentials
@@ -58,7 +63,7 @@ aws logs filter-log-events \
 --output json > output_log.json
 ```
 
-For NGAP, `LOG_GROUP_NAME` is `hyrax-<DEPLOYMENT_ENV>` for each of the deployment environments.
+For NGAP, `LOG_GROUP_NAME`s are `hyrax-<DEPLOYMENT_ENV>`, `hyrax_edl_profiling_log`, `hyrax_request_log`, and `hyrax_response_log` for each of the deployment environments.
 
 The start and end times are in miliseconds since the epoch. 
 For ease of calculation, the current time can be determined via `echo $(($(date +%s%N)/1000000))`.

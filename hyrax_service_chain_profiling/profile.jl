@@ -80,7 +80,7 @@ function main(; force_new_credentials::Bool=false, use_all_defaults::Bool=false)
 
     # Generate results  
     title_prefix = uppercase(first(split(log_group_name, "hyrax-"; limit=2))) * " "
-    results = analyze_logs(; log_path, title_prefix)
+    results = analyze_profile_logs(; log_path, title_prefix)
 
     return results
 end
