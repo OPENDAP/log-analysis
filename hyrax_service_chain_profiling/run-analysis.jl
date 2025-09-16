@@ -185,17 +185,32 @@ function get_legible_profiling_logs(raw_logs)
     end
 
     logs_olfs = let
-
-        checkpoints = filter(row -> startswith(row.timer_name, "Checkpoint:"), raw_logs["hyrax_edl_profiling"])
-        gdf = groupby(checkpoints, :request_id)
-
         df = select(raw_logs["hyrax_edl_profiling"],
                     :request_id, :timer_name => :action,
                     :start_time_ms => ByRow(v -> parse(Int, v) / 1000) => :start_sec,
                     :duration_ms => ByRow(v -> parse(Int, v) / 1000) => :duration_sec,
                     :start_time_ms => ByRow(v -> parse(Int, v[1:(end - 3)])) => :time)
 
-        
+        # Combine pairs of checkpoints into single action 
+        checkpoints = filter(row -> startswith(row.action, "Checkpoint:"), df)
+        df = filter(row -> !startswith(row.action, "Checkpoint:"), df)
+        for points in groupby(checkpoints, :request_id)
+            if nrow(points) != 2
+                @warn "OH NO something weird about checkpoint pairs..." points
+                continue
+            end
+            sort!(points, :start_sec)
+            p1 = first(points)
+            p2 = last(points)
+            push!(df,
+                  (; request_id=p1.request_id,
+                   action="Redirect to EDL for authentication code", start_sec=p1.start_sec,
+                   duration_sec=(p2.start_sec - p1.start_sec),
+                   time=p1.time))
+        end
+
+        # TODO-rename and maybe exclude olfs tasks --- also renumber
+        df
     end
 
     profile_logs = vcat(logs_bes, logs_olfs; cols=:union)
@@ -240,15 +255,15 @@ function analyze_profile_logs(; log_path, title_prefix="", verbose=false, max_zo
                             xlims=(nothing, nothing),
                             metadata=date_range * "\n" * basename(log_path))
 
-    # max_duration_zoom = min(Int(ceil(maximum(df_profiling.duration_sec))), max_zoom_x)
-    # for s in 2:2:max_duration_zoom
-    #     plot_profile_rainclouds(df_profiling;
-    #                             title=title_prefix * "service chain profiling (zoomed)",
-    #                             savepath=plot_prefix *
-    #                                      "_profile_raincloud_zoomed_max$(s)sec.png",
-    #                             xlims=(-0.2, s),
-    #                             metadata=date_range)
-    # end
+    max_duration_zoom = min(Int(ceil(maximum(df_profiling.duration_sec))), max_zoom_x)
+    for s in 2:2:max_duration_zoom
+        plot_profile_rainclouds(df_profiling;
+                                title=title_prefix * "service chain profiling (zoomed)",
+                                savepath=plot_prefix *
+                                         "_profile_raincloud_zoomed_max$(s)sec.png",
+                                xlims=(-0.2, s),
+                                metadata=date_range)
+    end
 
     return (; raw_logs, df_profiling)
 end
