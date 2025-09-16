@@ -10,7 +10,7 @@ The helper script `profile-last-hour.jl` has been added to enable a just-push-go
 
 _Dependency: [Julia](https://julialang.org/install/) installed._
 
-To be prompted for a time range, log group name, output directory, and (if needed) aws credentials, do:
+To be prompted for a time range, environment name (sit/uat/prod), output directory, and (if needed) aws credentials, do:
 ```bash
 julia path/to/profile.jl
 ```
