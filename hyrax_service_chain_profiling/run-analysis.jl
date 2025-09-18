@@ -148,6 +148,63 @@ end
 
 # Combine profiling logs from bes and olfs into single dataframe
 function get_legible_profiling_logs(raw_logs)
+    logs_olfs = let
+        df = select(raw_logs["hyrax_edl_profiling"],
+                    :request_id, :timer_name => :action,
+                    :start_time_ms => ByRow(v -> parse(Int, v) / 1000) => :start_sec,
+                    :duration_ms => ByRow(v -> parse(Int, v) / 1000) => :duration_sec,
+                    :start_time_ms => ByRow(v -> parse(Int, v[1:(end - 3)])) => :time,
+                    :duration_ms)
+
+        # Clean up session-based logs!
+        # In future, if request_id is stable across profiled checkpoints, we can
+        # combine sets of checkpoints into single action. For now, we have to exclude them 😢. 
+        # See README.md for example and better explanation of the following exclusions.
+        df = filter(row -> !(row.action == "Validate token - Is valid? false" &&
+                             row.duration_sec <= 1), df)
+        df = filter(row -> !startswith(row.action, "Checkpoint:"), df)
+        df = filter(row -> row.action !=
+                           "Handle login operation - Login now concluded? false", df)
+
+        # This duplicates "Request EDL user profile" (for curl) - if we do local validation, 
+        # we aren't using a service so it doesn't matter that this value is excluded
+        # (and it should be trivial compared to everything else, anyway...)
+        df = filter(row -> !startswith(row.action, "Validate token - Is valid?"), df)
+
+        # ...we need to do some extra math to support a site we neglected to uniquely profile :D
+        new_rows = DataFrame()
+        for gdf in groupby(df, :request_id)
+            nrow(gdf) == 2 || continue
+            @info "HERE WE ARE" gdf
+            if issetequal(gdf.action,
+                          ["Handle login operation - Login now concluded? true",
+                           "Request token from EDL"])
+                duration_sec = abs(-(gdf.duration_sec...))
+                push!(new_rows,
+                      (; request_id=gdf.request_id[1],
+                       action="1c. Request user ID from EDL\n(Sessions only)", start_sec=0,
+                       duration_sec, time=0, duration_ms=0); promote=true)
+            end
+        end
+        append!(df, new_rows; promote=true)
+
+        # Now that we've done that math, we can remove the overarching profile statement
+        df = filter(row -> !startswith(row.action, "Handle login operation - Login now concluded? true"), df)
+
+        _add_num_prefix = str -> begin
+            if str == "Request EDL user profile"
+                return "1a. Get token validation from EDL\n(Curl requests only)"
+            elseif str == "Request token from EDL"
+                return "1b. Get token in exchange for code from EDL\n(Sessions only)"
+            else
+                @warn "Unexpected action type: `$str`"
+            end
+            return str
+        end
+        transform!(df, :action => ByRow(_add_num_prefix) => :action)
+        df
+    end
+
     logs_bes = let
         df = select(raw_logs["profiling"],
                     :request_id, :action,
@@ -162,55 +219,32 @@ function get_legible_profiling_logs(raw_logs)
                    " unconstrained" => "")) => :action)
 
         _add_num_prefix = str -> begin
-            str == "Get granule record from CMR" &&
-                (return "1. " * str * "\n(Includes retries on failure)")
-            str == "Get DMRpp from DAAC bucket" &&
-                (return "2. Get DMR++ from S3\n(Includes TEA redirect)")
-            str == "Get signed url from TEA" && (return "3. " * str)
-            startswith(str, "Get SuperChunk data") &&
-                (return "4. Get SuperChunk data from S3")
-            startswith(str, "Process SuperChunk data") &&
-                (return "5. Process SuperChunk\n(In memory)")
-            startswith(str, "Validate token") && (return "??. Validate token")
-            startswith(str, "Get EDL user profile") && (return "??. Get EDL user profile")
-            startswith(str, "Process login operation") &&
-                (return "??. Process login operation")
-            startswith(str, "Checkpoint") && (return "??. Checkpoint") # TODO: process better
-            startswith(str, "Get token from EDL") && (return "??. Get token from EDL")
-
-            @warn "Unexpected action type: `$str`"
+            if str == "Get granule record from CMR"
+                return "2. " * str * "\n(Includes retries on failure)"
+            elseif str == "Get DMRpp from DAAC bucket"
+                return "3. Get DMR++ from S3\n(Includes implicit TEA redirect)"
+            elseif str == "Get signed url from TEA"
+                return "4. " * str
+            elseif startswith(str, "Get SuperChunk data")
+                return "5. Get SuperChunk data from S3"
+            elseif startswith(str, "Process SuperChunk data")
+                return "6. Process SuperChunk\n(In memory)"
+            elseif startswith(str, "Validate token")
+                return "??. Validate token"
+            elseif startswith(str, "Get EDL user profile")
+                return "??. Get EDL user profile"
+            elseif startswith(str, "Process login operation")
+                return "??. Process login operation"
+            elseif startswith(str, "Checkpoint")
+                return "??. Checkpoint"# TODO: process better
+            elseif startswith(str, "Get token from EDL")
+                return "??. Get token from EDL"
+            else
+                @warn "Unexpected action type: `$str`"
+            end
             return str
         end
         transform!(df, :action => ByRow(_add_num_prefix) => :action)
-    end
-
-    logs_olfs = let
-        df = select(raw_logs["hyrax_edl_profiling"],
-                    :request_id, :timer_name => :action,
-                    :start_time_ms => ByRow(v -> parse(Int, v) / 1000) => :start_sec,
-                    :duration_ms => ByRow(v -> parse(Int, v) / 1000) => :duration_sec,
-                    :start_time_ms => ByRow(v -> parse(Int, v[1:(end - 3)])) => :time)
-
-        # Combine pairs of checkpoints into single action 
-        checkpoints = filter(row -> startswith(row.action, "Checkpoint:"), df)
-        df = filter(row -> !startswith(row.action, "Checkpoint:"), df)
-        for points in groupby(checkpoints, :request_id)
-            if nrow(points) != 2
-                @warn "OH NO something weird about checkpoint pairs..." points
-                continue
-            end
-            sort!(points, :start_sec)
-            p1 = first(points)
-            p2 = last(points)
-            push!(df,
-                  (; request_id=p1.request_id,
-                   action="Redirect to EDL for authentication code", start_sec=p1.start_sec,
-                   duration_sec=(p2.start_sec - p1.start_sec),
-                   time=p1.time))
-        end
-
-        # TODO-rename and maybe exclude olfs tasks --- also renumber
-        df
     end
 
     profile_logs = vcat(logs_bes, logs_olfs; cols=:union)
@@ -250,15 +284,15 @@ function analyze_profile_logs(; log_path, title_prefix="", verbose=false, max_zo
     display(reverse(gdf))
 
     @info "Generating summary plots in $(dirname(plot_prefix))..."
-    plot_profile_rainclouds(df_profiling; title=title_prefix * "service chain profiling",
+    plot_profile_rainclouds(df_profiling; title=title_prefix * "Service-chain profiling",
                             savepath=plot_prefix * "_profile_raincloud.png",
                             xlims=(nothing, nothing),
-                            metadata=date_range * "\n" * basename(log_path))
+                            metadata=date_range * " " * title_prefix)
 
     max_duration_zoom = min(Int(ceil(maximum(df_profiling.duration_sec))), max_zoom_x)
     for s in 2:2:max_duration_zoom
         plot_profile_rainclouds(df_profiling;
-                                title=title_prefix * "service chain profiling (zoomed)",
+                                title=title_prefix * "Service-chain profiling (zoomed)",
                                 savepath=plot_prefix *
                                          "_profile_raincloud_zoomed_max$(s)sec.png",
                                 xlims=(-0.2, s),
