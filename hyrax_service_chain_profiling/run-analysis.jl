@@ -66,10 +66,11 @@ function get_date_range_meta_str(profiling_logs)
     str = "$duration starting "
 
     d = minimum(profiling_logs.time)
-    z = ZonedDateTime(unix2datetime(d), tz"America/New_York")
-    str *= Dates.format(z, "yyyy-mm-dd")
-    str *= Dates.format(z, "HH:MM:SS.sss")
-    tz = FixedTimeZone(z)
+    z = ZonedDateTime(unix2datetime(d), tz"UTC")
+    z_local = astimezone(z, tz"America/New_York")
+    str *= Dates.format(z_local, "yyyy-mm-dd")
+    str *= Dates.format(z_local, "HH:MM:SS.sss")
+    tz = FixedTimeZone(z_local)
     str *= " $(tz.name) (UTC$(tz.offset))"
     return str
 end
