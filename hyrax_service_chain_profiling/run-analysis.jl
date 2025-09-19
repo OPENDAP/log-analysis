@@ -198,6 +198,8 @@ function get_legible_profiling_logs(raw_logs)
                 return "1a. Get token validation from EDL\n(Curl requests only)"
             elseif str == "Request token from EDL"
                 return "1b. Get token in exchange for code from EDL\n(Sessions only)"
+            elseif str == "1c. Get ID (via User Profile) from EDL\n(Sessions only)"
+                return str 
             else
                 @warn "Unexpected action type: `$str`"
             end
