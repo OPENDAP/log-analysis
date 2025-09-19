@@ -81,7 +81,7 @@ function main(; force_new_credentials::Bool=false, use_all_defaults::Bool=false)
         logs = read(aws_cmd, String)
         mkpath(dirname(log_path))
         write(log_path, logs)
-        @info "\t...saved to $log_path"
+        println("...saved to $log_path")
     end
     @info "Log download complete"
 

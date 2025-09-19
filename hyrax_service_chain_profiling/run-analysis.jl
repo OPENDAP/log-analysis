@@ -171,25 +171,27 @@ function get_legible_profiling_logs(raw_logs)
         # (and it should be trivial compared to everything else, anyway...)
         df = filter(row -> !startswith(row.action, "Validate token - Is valid?"), df)
 
-        # ...we need to do some extra math to support a site we neglected to uniquely profile :D
+        # ...we need to do some extra math to support a call site we neglected to uniquely profile :D
         new_rows = DataFrame()
         for gdf in groupby(df, :request_id)
             nrow(gdf) == 2 || continue
-            @info "HERE WE ARE" gdf
             if issetequal(gdf.action,
                           ["Handle login operation - Login now concluded? true",
                            "Request token from EDL"])
                 duration_sec = abs(-(gdf.duration_sec...))
                 push!(new_rows,
                       (; request_id=gdf.request_id[1],
-                       action="1c. Request user ID from EDL\n(Sessions only)", start_sec=0,
+                       action="1c. Get ID (via User Profile) from EDL\n(Sessions only)",
+                       start_sec=0,
                        duration_sec, time=0, duration_ms=0); promote=true)
             end
         end
         append!(df, new_rows; promote=true)
 
         # Now that we've done that math, we can remove the overarching profile statement
-        df = filter(row -> !startswith(row.action, "Handle login operation - Login now concluded? true"), df)
+        df = filter(row -> !startswith(row.action,
+                                       "Handle login operation - Login now concluded? true"),
+                    df)
 
         _add_num_prefix = str -> begin
             if str == "Request EDL user profile"
