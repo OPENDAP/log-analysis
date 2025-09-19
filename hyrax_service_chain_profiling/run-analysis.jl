@@ -6,6 +6,7 @@ using JSON3
 using Statistics
 using CairoMakie
 using Dates
+using TimeZones
 
 #####
 ##### Helper function
@@ -53,6 +54,24 @@ end
 
 function get_date_range_str(profiling_logs)
     return join(unix2datetime.(extrema(profiling_logs.time)), " to ")
+end
+
+function get_date_range_meta_str(profiling_logs)
+    str = ""
+    duration = let
+        d = abs(-(extrema(profiling_logs.time)...))
+        Dates.canonicalize(Dates.Second(d))
+    end
+
+    str = "$duration starting "
+
+    d = minimum(profiling_logs.time)
+    z = ZonedDateTime(unix2datetime(d), tz"America/New_York")
+    str *= Dates.format(z, "yyyy-mm-dd")
+    str *= Dates.format(z, "HH:MM:SS.sss")
+    tz = FixedTimeZone(z)
+    str *= " $(tz.name) (UTC$(tz.offset))"
+    return str
 end
 
 function add_logs!(logs::Dict, df::DataFrame; key::String)
@@ -178,12 +197,15 @@ function get_legible_profiling_logs(raw_logs)
             if issetequal(gdf.action,
                           ["Handle login operation - Login now concluded? true",
                            "Request token from EDL"])
+                sort!(gdf, :start_sec)
                 duration_sec = abs(-(gdf.duration_sec...))
+                start_sec = last(gdf.start_sec) - last(gdf.duration_sec) - duration_sec
+                time = first(gdf.time) # Not quite true, but doesn't really matter b/c we don't ever use this field!
                 push!(new_rows,
                       (; request_id=gdf.request_id[1],
                        action="1c. Get ID (via User Profile) from EDL\n(Sessions only)",
-                       start_sec=0,
-                       duration_sec, time=0, duration_ms=0); promote=true)
+                       start_sec, duration_sec, time,
+                       duration_ms=duration_sec / 1000); promote=true)
             end
         end
         append!(df, new_rows; promote=true)
@@ -199,7 +221,7 @@ function get_legible_profiling_logs(raw_logs)
             elseif str == "Request token from EDL"
                 return "1b. Get token in exchange for code from EDL\n(Sessions only)"
             elseif str == "1c. Get ID (via User Profile) from EDL\n(Sessions only)"
-                return str 
+                return str
             else
                 @warn "Unexpected action type: `$str`"
             end
@@ -234,9 +256,9 @@ function get_legible_profiling_logs(raw_logs)
             elseif str == "Get signed url from TEA"
                 return "4. " * str
             elseif startswith(str, "Get SuperChunk data")
-                return "5. Get SuperChunk data from S3"
-            # elseif startswith(str, "Process SuperChunk data")
-            #     return "6. Process SuperChunk\n(In memory)"
+                return "5. Get SuperChunk data from S3\n(parallel requests; variable data sizes)"
+                # elseif startswith(str, "Process SuperChunk data")
+                #     return "6. Process SuperChunk\n(In memory)"
             elseif startswith(str, "Validate token")
                 return "??. Validate token"
             elseif startswith(str, "Get EDL user profile")
@@ -273,16 +295,14 @@ function analyze_profile_logs(; log_path, title_prefix="", verbose=false, max_zo
     break_profiling_out_of_bes_timing_logs!(raw_logs)
 
     verbose && print_log_examples(raw_logs)
-    request_ids = []
-    for k in keys(raw_logs)
-        k == "start-up" && continue
-        k == "error" && continue
-        append!(request_ids, unique(raw_logs[k].request_id))
-    end
-    @info "Total unique request ids: $(length(unique(request_ids)))"
+    total_requests = length(unique(raw_logs["hyrax_request_log"].request_id))
+    @info "Total unique requests: $total_requests"
 
     df_profiling = get_legible_profiling_logs(raw_logs)
     date_range = get_date_range_str(df_profiling)
+    date_details = get_date_range_meta_str(df_profiling)
+    req_count_str = "$(total_requests) hyrax requests"
+
     @info "Total unique request ids in profiling logs: $(length(unique(df_profiling.request_id)))"
     @info "Profile logs summary:" date_range total_log_lines = nrow(df_profiling)
     println()
@@ -292,10 +312,11 @@ function analyze_profile_logs(; log_path, title_prefix="", verbose=false, max_zo
     display(reverse(gdf))
 
     @info "Generating summary plots in $(dirname(plot_prefix))..."
+    metadata = "$req_count_str ($(lowercase(rstrip(title_prefix))))\n$date_range, i.e.\n$date_details"
     plot_profile_rainclouds(df_profiling; title=title_prefix * "Service-chain profiling",
                             savepath=plot_prefix * "_profile_raincloud.png",
                             xlims=(nothing, nothing),
-                            metadata=date_range * " " * title_prefix)
+                            metadata)
 
     max_duration_zoom = min(Int(ceil(maximum(df_profiling.duration_sec))), max_zoom_x)
     for s in 2:2:max_duration_zoom
@@ -304,7 +325,7 @@ function analyze_profile_logs(; log_path, title_prefix="", verbose=false, max_zo
                                 savepath=plot_prefix *
                                          "_profile_raincloud_zoomed_max$(s)sec.png",
                                 xlims=(-0.2, s),
-                                metadata=date_range)
+                                metadata)
     end
 
     return (; raw_logs, df_profiling)
