@@ -215,6 +215,10 @@ function get_legible_profiling_logs(raw_logs)
                     :start_us => ByRow(v -> v / 1_000_000) => :start_sec,
                     :elapsed_us => ByRow(v -> v / 1_000_000) => :duration_sec,
                     :details, :time)
+
+        # Remove step that isn't actually the service chain
+        df = filter(row -> !startswith(row.action, "Handle SuperChunk"), df)
+
         # Rename the task actions from their logged text to make them more legible on the output plot
         transform!(df,
                    :action => ByRow(a -> replace(a, "Request redirect url" => "Get signed url from TEA",
@@ -231,8 +235,8 @@ function get_legible_profiling_logs(raw_logs)
                 return "4. " * str
             elseif startswith(str, "Get SuperChunk data")
                 return "5. Get SuperChunk data from S3"
-            elseif startswith(str, "Process SuperChunk data")
-                return "6. Process SuperChunk\n(In memory)"
+            # elseif startswith(str, "Process SuperChunk data")
+            #     return "6. Process SuperChunk\n(In memory)"
             elseif startswith(str, "Validate token")
                 return "??. Validate token"
             elseif startswith(str, "Get EDL user profile")
