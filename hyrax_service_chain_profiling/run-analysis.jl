@@ -68,7 +68,7 @@ function get_date_range_meta_str(profiling_logs)
     d = minimum(profiling_logs.time)
     z = ZonedDateTime(unix2datetime(d), tz"UTC")
     z_local = astimezone(z, tz"America/New_York")
-    str *= Dates.format(z_local, "yyyy-mm-dd")
+    str *= Dates.format(z_local, "yyyy-mm-dd") * " "
     str *= Dates.format(z_local, "HH:MM:SS.sss")
     tz = FixedTimeZone(z_local)
     str *= " $(tz.name) (UTC$(tz.offset))"
@@ -257,7 +257,7 @@ function get_legible_profiling_logs(raw_logs)
             elseif str == "Get signed url from TEA"
                 return "4. " * str
             elseif startswith(str, "Get SuperChunk data")
-                return "5. Get SuperChunk data from S3\n(parallel requests; variable data sizes)"
+                return "5. Get SuperChunk data from S3\n(Parallel requests; variable data size)"
                 # elseif startswith(str, "Process SuperChunk data")
                 #     return "6. Process SuperChunk\n(In memory)"
             elseif startswith(str, "Validate token")
@@ -302,7 +302,7 @@ function analyze_profile_logs(; log_path, title_prefix="", verbose=false, max_zo
     df_profiling = get_legible_profiling_logs(raw_logs)
     date_range = get_date_range_str(df_profiling)
     date_details = get_date_range_meta_str(df_profiling)
-    req_count_str = "$(total_requests) hyrax requests"
+    req_count_str = "$(total_requests) requests"
 
     @info "Total unique request ids in profiling logs: $(length(unique(df_profiling.request_id)))"
     @info "Profile logs summary:" date_range total_log_lines = nrow(df_profiling)
@@ -313,7 +313,7 @@ function analyze_profile_logs(; log_path, title_prefix="", verbose=false, max_zo
     display(reverse(gdf))
 
     @info "Generating summary plots in $(dirname(plot_prefix))..."
-    metadata = "$req_count_str ($(lowercase(rstrip(title_prefix))))\n$date_range, i.e.\n$date_details"
+    metadata = "$req_count_str ($(rstrip(title_prefix)))\n$date_range, i.e.\n$date_details"
     plot_profile_rainclouds(df_profiling; title=title_prefix * "Service-chain profiling",
                             savepath=plot_prefix * "_profile_raincloud.png",
                             xlims=(nothing, nothing),
