@@ -1,6 +1,5 @@
 using Dates
-
-include(joinpath(@__DIR__, "run-analysis.jl"))
+using HyraxLogAnalysis
 
 #####
 ##### Helper function
